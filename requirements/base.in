@@ -1,0 +1,9 @@
+certifi==2019.6.16
+scipy==1.2.0
+pandas==0.24.0
+pathvalidate==0.29.0
+numpy==1.16.1
+GitPython==2.1.11
+importlib-metadata==0.18
+scikit-learn==0.20.2
+xarray==0.12.2

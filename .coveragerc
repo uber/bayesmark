@@ -1,0 +1,11 @@
+[report]
+exclude_lines =
+    pragma: no cover
+    @abstract
+    ValueError
+    assert
+    _error
+    def main()
+    pragma: io
+    pragma: main
+    pragma: validator

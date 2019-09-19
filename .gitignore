@@ -1,0 +1,59 @@
+.*
+!.gitignore
+!.gitmodules
+!.flake8
+!.coveragerc
+!.pre-commit-config.yaml
+!.secrets.baseline
+!.travis.yml
+
+# For wheels
+bo_benchmark/version.py
+dist/
+
+# Java
+*.class
+
+# Intellij
+*.iml
+*.iws
+
+# Gradle
+build/
+classes/
+
+log/
+tmp/
+/out/
+ins.xml
+*.log
+
+# Python
+*.py[co]
+*.egg*
+.cache
+.DS_Store
+
+# env
+env/
+
+# Emacs
+*~
+.\#*
+\#*\#
+
+# *ipynb
+.ipynb_checkpoints
+*.png
+*.aux
+
+# Hypothesis
+tests/src
+src/
+
+# Coverage
+htmlcov/
+
+# for the test.sh pip compile check
+requirements/*.chk
+requirement_chk.in

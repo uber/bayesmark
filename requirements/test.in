@@ -1,0 +1,11 @@
+-r base.in
+-r optimizers.in
+hypothesis==4.32.3
+hypothesis-gufunc==0.0.5rc2
+numpy==1.16.1
+pathvalidate==0.29.0
+scipy==1.2.0
+scikit-learn==0.20.2
+xarray==0.12.2
+pytest==5.0.1
+pytest-cov==2.7.1

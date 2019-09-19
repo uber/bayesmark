@@ -1,0 +1,71 @@
+{
+    "HyperOpt-New": [
+        "hyperopt_optimizer.py",
+        {}
+    ],
+    "Nevergrad-OnePlusOne-New": [
+        "nevergrad_optimizer.py",
+        {
+            "budget": 300,
+            "tool": "OnePlusOne"
+        }
+    ],
+    "OpenTuner-BanditA-New": [
+        "opentuner_optimizer.py",
+        {
+            "techniques": [
+                "AUCBanditMetaTechniqueA"
+            ]
+        }
+    ],
+    "OpenTuner-GA-DE-New": [
+        "opentuner_optimizer.py",
+        {
+            "techniques": [
+                "PSO_GA_DE"
+            ]
+        }
+    ],
+    "OpenTuner-GA-New": [
+        "opentuner_optimizer.py",
+        {
+            "techniques": [
+                "PSO_GA_Bandit"
+            ]
+        }
+    ],
+    "PySOT-New": [
+        "pysot_optimizer.py",
+        {
+            "expected_total_evals": 300
+        }
+    ],
+    "RandomSearch-New": [
+        "random_optimizer.py",
+        {}
+    ],
+    "Scikit-GBRT-Hedge-New": [
+        "scikit_optimizer.py",
+        {
+            "acq_func": "gp_hedge",
+            "base_estimator": "GBRT",
+            "n_initial_points": 5
+        }
+    ],
+    "Scikit-GP-Hedge-New": [
+        "scikit_optimizer.py",
+        {
+            "acq_func": "gp_hedge",
+            "base_estimator": "GP",
+            "n_initial_points": 5
+        }
+    ],
+    "Scikit-GP-LCB-New": [
+        "scikit_optimizer.py",
+        {
+            "acq_func": "LCB",
+            "base_estimator": "GP",
+            "n_initial_points": 5
+        }
+    ]
+}

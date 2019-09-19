@@ -1,0 +1,71 @@
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v1.2.3
+    hooks:
+    -   id: flake8
+        exclude: ^(docs/*)
+        args: [--max-line-length=120, --ignore=E203]
+    -   id: check-byte-order-marker
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: end-of-file-fixer
+    -   id: forbid-new-submodules
+    -   id: mixed-line-ending
+        args: [--fix=lf]
+    -   id: trailing-whitespace
+    -   id: debug-statements
+    -   id: check-json
+    -   id: pretty-format-json
+        args: [--autofix, --indent=4]
+    -   id: check-yaml
+    -   id: sort-simple-yaml
+-   repo: https://github.com/ambv/black
+    rev: 19.3b0
+    hooks:
+    -   id: black
+        args: [-l 120, --target-version=py36]
+-   repo: https://github.com/asottile/seed-isort-config
+    rev: v1.2.0
+    hooks:
+    -   id: seed-isort-config
+        args: [--application-directories=test]
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: v4.3.4
+    hooks:
+    -   id: isort
+        language_version: python3
+        args: [-w 120, -m 3, -tc, --project=bo_benchmark]
+- repo: https://github.com/jumanjihouse/pre-commit-hooks
+  sha: 1.11.0
+  hooks:
+    - id: require-ascii
+    - id: script-must-have-extension
+    - id: forbid-binary
+-   repo: https://github.com/Lucas-C/pre-commit-hooks
+    sha: v1.1.6
+    hooks:
+    -   id: forbid-crlf
+    -   id: forbid-tabs
+- repo: https://github.com/kynan/nbstripout
+  sha: fe155a55548c61e4eb53522e57921077acf82c00  # pragma: allowlist secret
+  hooks:
+    - id: nbstripout
+      exclude: ^notebooks/.*\.out\.ipynb$
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v0.12.5
+  hooks:
+    - id: detect-secrets
+      args: ['--baseline', '.secrets.baseline']
+- repo: https://github.com/pre-commit/pygrep-hooks
+  rev: v1.4.1  # Use the ref you want to point at
+  hooks:
+    - id: python-no-eval
+    - id: python-check-blanket-noqa
+- repo: https://github.com/asottile/yesqa
+  rev: v0.0.11
+  hooks:
+    - id: yesqa
+- repo: https://github.com/myint/eradicate
+  rev: 522ed7ce2da82d33b3e2331bf50d4671c5a5af9a  # pragma: allowlist secret
+  hooks:
+    - id: eradicate
+      exclude: docs/conf.py

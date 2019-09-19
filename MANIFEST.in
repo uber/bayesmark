@@ -1,0 +1,5 @@
+include requirements/base.in
+include requirements/optimizers.in
+include requirements/ipynb.in
+include LICENSE
+include README.md

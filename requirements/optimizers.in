@@ -1,0 +1,9 @@
+-r base.in
+opentuner==0.8.1
+numpy==1.16.1
+scipy==1.2.0
+nevergrad==0.1.4
+hyperopt==0.1.1
+POAP==0.1.26
+scikit-optimize==0.5.2
+pySOT==0.2.3
