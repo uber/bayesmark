@@ -1,43 +1,49 @@
 # Installation
 
+[![](https://api.travis-ci.com/uber/bo-benchmark.png?token=RSemjpisB7uiZv78DVwd&branch=master)](https://travis-ci.com/uber/bo-benchmark)
+
+This project is experimental and the APIs are not considered stable.
+
 This Bayesian optimization (BO) benchmark framework requires a few easy steps for setup. It can be run either on a local machine (in serial) or prepare a *commands file* to run on a cluster as parallel experiments (dry run mode).
 
-The following instructions have been tested with Python 3.6.8 on Ubuntu (16.04.5 LTS).
+Only `Python>=3.6` is officially supported, but older versions of Python likely work as well.
 
 The core package itself can be installed with:
 
-```
+```bash
 pip install bo-benchmark
 ```
 However, to also require installation of all the "built in" optimizers for evaluation, run:
 
-```
+```bash
 pip install bo-benchmark[optimizers]
 ```
 It is also possible to use the same pinned dependencies we used in testing by [installing from the repo](#install-in-editable-mode).
 
 Building an environment to run the included notebooks can be done with:
 
-```
+```bash
 pip install bo-benchmark[notebooks]
 ```
 Or, `bo-benchmark[optimizers,notebooks]` can be used.
+
+A quick example of running the benchmark is [here](#example).
 
 ## Non-pip dependencies
 
 To be able to install `opentuner` some system level (non-pip) dependencies must be installed. This can be done with:
 
-```
+```bash
 sudo apt-get install libsqlite3-0
 sudo apt-get install libsqlite3-dev
 ```
 On Ubuntu, this results in:
 
-```
+```console
+> dpkg -l | grep libsqlite
 ii  libsqlite3-0:amd64    3.11.0-1ubuntu1  amd64  SQLite 3 shared library
 ii  libsqlite3-dev:amd64  3.11.0-1ubuntu1  amd64  SQLite 3 development files
 ```
-On Ubuntu, one can run `dpkg -l | grep libsqlite` to see which `libsqlite` packages are installed.
 
 The environment should now all be setup to run the BO benchmark.
 
@@ -122,6 +128,18 @@ The `csv` file can be anything readable by pandas, but we assume the final colum
 
 It is also possible to do a "dry run" of the launcher by specifying a value for `--num-jobs` greater than zero. For example, if `--num-jobs 50` is provided, a text file listing 50 commands to run is produced, with one command (job) per line. This is useful when preparing a list of commands to run later on a cluster.
 
+A dry run will generate a command file (e.g., `jobs.txt`) like the following (with a meta-data header). Each line corresponds to a command that can be used as a job on a different worker:
+
+```
+# running: {'--uuid': None, '-db-root': '/foo', '--opt-root': '/example_opt_root', '--data-root': None, '--db': 'bo_example_folder', '--opt': ['RandomSearch', 'PySOT'], '--data': None, '--classifier': ['SVM', 'DT'], '--metric': None, '--calls': 15, '--suggestions': 1, '--repeat': 3, '--num-jobs': 50, '--jobs-file': '/jobs.txt', '--verbose': False, 'dry_run': True, 'rev': '9a14ef2', 'opt_rev': None}
+# cmd: python bob-launch -n 15 -r 3 -dir foo -o RandomSearch PySOT -c SVM DT -nj 50 -b bo_example_folder
+job_e2b63a9_00 bob-exp -c SVM -d diabetes -o PySOT -u 079a155f03095d2ba414a5d2cedde08c -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d boston -o RandomSearch -u 400e4c0be8295ad59db22d9b5f31d153 -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d digits -o RandomSearch -u fe73a2aa960a5e3f8d78bfc4bcf51428 -m acc -n 15 -p 1 -dir foo -b bo_example_folder
+job_e2b63a9_01 bob-exp -c DT -d diabetes -o PySOT -u db1d9297948554e096006c172a0486fb -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d boston -o RandomSearch -u 7148f690ed6a543890639cc59db8320b -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d breast -o PySOT -u 72c104ba1b6d5bb8a546b0064a7c52b1 -m nll -n 15 -p 1 -dir foo -b bo_example_folder
+job_e2b63a9_02 bob-exp -c SVM -d iris -o PySOT -u cc63b2c1e4315a9aac0f5f7b496bfb0f -m nll -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c DT -d breast -o RandomSearch -u aec62e1c8b5552e6b12836f0c59c1681 -m nll -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c DT -d digits -o RandomSearch -u 4d0a175d56105b6bb3055c3b62937b2d -m acc -n 15 -p 1 -dir foo -b bo_example_folder
+...
+```
+This package does not have built in support for deploying these jobs on a cluster or cloud environment (.e.g., AWS).
+
 ### The UUID argument
 
 The `UUID` is a 32-char hex string used as a master random seed which we use to draw random seeds for the experiments. If `UUID` is not specified a version 4 UUID is generated. The used UUID is displayed at the beginning of `stdout`. In general, the `UUID` should not specified/re-used except for debugging because it violates the assumption that the experiment UUIDs are unique.
@@ -174,12 +192,12 @@ The `bob-anal` command looks for a `baseline.json` file in `[DB_ROOT]/[DBID]/der
 
 After finishing the setup (environment) a small-scale serial can be run as follows:
 
-```
-# setup
+```console
+> # setup
 > DB_ROOT=./notebooks  # path/to/where/you/put/results
 > DBID=bo_example_folder
 > mkdir $DB_ROOT
-# experiments
+> # experiments
 > bob-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT -c SVM DT -v
 Supply --uuid 3adc3182635e44ea96969d267591f034 to reproduce this run.
 Supply --dbid bo_example_folder to append to this experiment or reproduce jobs file.
@@ -190,9 +208,9 @@ User must ensure equal reps of each optimizer for unbiased results
 ...
 0 failures of benchmark script after 144 studies.
 done
-# aggregate
+> # aggregate
 > bob-agg -dir $DB_ROOT -b $DBID
-# analyze
+> # analyze
 > bob-anal -dir $DB_ROOT -b $DBID -v
 ...
 median score @ 15:
@@ -219,7 +237,7 @@ To use the notebooks, first copy over the `notebooks/` folder from git repositor
 
 To setup the kernel for running the notebooks use:
 
-```
+```bash
 virtualenv bobm_ipynb --python=python3.6
 source ./bobm_ipynb/bin/activate
 pip install bo-benchmark[notebooks]
@@ -229,14 +247,14 @@ Now, the notebooks for plotting can be run with the command `jupyter notebook` a
 
 It is also possible to convert the notebooks to an HTML report at the command line using `nbconvert`. For example, use the command:
 
-```
+```bash
 jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
 ```
 The output file will be in `./notebooks/plot_mean_score.html`. See the `nbconvert` [documentation](https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats) for more output formats. By default, the notebooks look in `./notebooks/bo_example_folder/` for the `summary.json` from `bob-anal`.
 
 To run `plot_test_case.ipynb` use the command:
 
-```
+```bash
 jupyter nbconvert --to html --execute notebooks/plot_test_case.ipynb --ExecutePreprocessor.timeout=600
 ```
 The `--ExecutePreprocessor.timeout=600` timeout increase is needed due to the large number of plots being generated. The output will be in `./notebooks/plot_test_case.html`.
@@ -255,7 +273,7 @@ So passing the function as an argument as is done in `scipy.optimization` is art
 
 The implementation of the wrapper will look like the following:
 
-```
+```python
 from bo_benchmark.abstract_optimizer import AbstractOptimizer
 from bo_benchmark.experiment import experiment_main
 
@@ -323,7 +341,8 @@ Depending on the API of the optimizer being wrapped, building this wrapper class
 
 Each optimizer wrapper can have multiple configurations, which is each referred to as a different optimizer in the benchmark. For example, the JSON config file will have entries as follows:
 
-```
+```json
+{
     "OpenTuner-BanditA-New": [
         "opentuner_optimizer.py",
         {"techniques": ["AUCBanditMetaTechniqueA"]}
@@ -335,7 +354,8 @@ Each optimizer wrapper can have multiple configurations, which is each referred 
     "OpenTuner-GA-New": [
         "opentuner_optimizer.py",
         {"techniques": ["PSO_GA_Bandit"]}
-    ],
+    ]
+}
 ```
 Basically, the entries are `"name_of_strategy": ["file_with_class", {kwargs_for_the_constructor}]`. Here, `OpenTuner-BanditA`, `OpenTuner-GA-DE`, and `OpenTuner-GA` are all treated as different optimizers by the benchmark even though the all use the same class from `opentuner_optimizer.py`.
 
@@ -345,37 +365,39 @@ This `config.json` must be in the same folder as the optimizer classes (e.g., `o
 
 To run the benchmarks using a new optimizer, simply provide its name (from `config.json`) in the `-o` list. The `--opt-root` argument must be specified in this case. For example, the launch command from the [example](#example) becomes:
 
-```
+```bash
 bob-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT-New -c SVM DT --opt-root ./example_opt_root -v
 ```
 Here, we are using the example `PySOT-New` wrapper from the `example_opt_root` folder in the git repo. It is equivalent to the builtin `PySOT`, but gives an example of how to provide a new custom optimizer.
 
 # Contributing
 
+The following instructions have been tested with Python 3.6.8 on Ubuntu (16.04.5 LTS).
+
 ## Install in editable mode
 
 First, define the variables for the paths we will use:
 
-```
+```bash
 GIT=/path/to/where/you/put/repos
 ENVS=/path/to/where/you/put/virtualenvs
 ```
 Then clone the repo in your git directory `$GIT`:
 
-```
+```bash
 cd $GIT
 git clone https://github.com/uber/bo-benchmark.git
 ```
 Inside your virtual environments folder `$ENVS`, make the environment:
 
-```
+```bash
 cd $ENVS
 virtualenv bo_benchmark --python=python3.6
 source $ENVS/bo_benchmark/bin/activate
 ```
 Now we can install the pip dependencies. Move back into your git directory and run
 
-```
+```bash
 cd $GIT/bo-benchmark
 pip install -r requirements/base.txt
 pip install -r requirements/optimizers.txt
@@ -387,7 +409,7 @@ You may want to run `pip install -U pip` first if you have an old version of `pi
 
 First, we need to setup some needed tools:
 
-```
+```bash
 cd $ENVS
 virtualenv bo_benchmark_tools --python=python3.6
 source $ENVS/bo_benchmark_tools/bin/activate
@@ -396,14 +418,14 @@ pip install -r $GIT/bo-benchmark/requirements/tools.txt
 
 To install the pre-commit hooks for contributing run (in the `bo_benchmark_tools` environment):
 
-```
+```bash
 cd $GIT/bo-benchmark
 pre-commit install
 ```
 
 To rebuild the requirements, we can run:
 
-```
+```bash
 cd $GIT/bo-benchmark
 # Get py files from notebooks to analyze
 jupyter nbconvert --to script notebooks/*.ipynb
@@ -421,7 +443,7 @@ pip-compile-multi --no-upgrade
 
 First setup the environment for building with `Sphinx`:
 
-```
+```bash
 cd $ENVS
 virtualenv bo_benchmark_docs --python=python3.6
 source $ENVS/bo_benchmark_docs/bin/activate
@@ -429,7 +451,7 @@ pip install -r $GIT/bo-benchmark/requirements/docs.txt
 ```
 Then we can do the build:
 
-```
+```bash
 cd $GIT/bo-benchmark/docs
 make all
 open _build/html/index.html
@@ -440,7 +462,7 @@ Documentation will be available in all formats in `Makefile`. Use `make html` to
 
 The tests for this package can be run with:
 
-```
+```bash
 cd $GIT/bo-benchmark
 ./test.sh
 ```
@@ -450,7 +472,7 @@ The `test.sh` script *must* be run from a *clean* git repo.
 
 Or if we only want to run the unit tests and not check the adequacy of the requirements files, one can use
 
-```
+```bash
 # Setup environment
 cd $ENVS
 virtualenv bo_benchmark_test --python=python3.6
@@ -467,7 +489,7 @@ A code coverage report will also be produced in `$GIT/bo-benchmark/htmlcov/index
 
 The wheel (tar ball) for deployment as a pip installable package can be built using the script:
 
-```
+```bash
 cd $GIT/bo-benchmark/
 ./build_wheel.sh
 ```

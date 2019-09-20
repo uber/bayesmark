@@ -15,15 +15,10 @@
 """
 import logging
 
-import certifi
-
 import bo_benchmark.cmd_parse as cmd
 from bo_benchmark.cmd_parse import CmdArgs
 from bo_benchmark.constants import EXP_VARS
 from bo_benchmark.serialize import XRSerializer
-
-# Import and do nothing with to keep pipreqs and flake8 happy at same time
-assert certifi
 
 EXIST_OK = True
 

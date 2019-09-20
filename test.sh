@@ -10,7 +10,7 @@ export CONDA_ENVS=env
 # Sometime pip PIP_REQUIRE_VIRTUALENV has issues with conda
 export PIP_REQUIRE_VIRTUALENV=false
 
-PY_VERSIONS=( "3.6" )
+PY_VERSIONS=( "3.6" "3.7" )
 
 # Handy to know what we are working with
 git --version
@@ -67,99 +67,117 @@ nameonly () { grep -i '^[a-z0-9]' | sed -E "s/([^=]*)==.*/\1/g" | tr _ - | sort 
 nameveronly () { grep -i '^[a-z0-9]' | awk '{print $1}' | tr _ - | sort -f; }
 pipcheck () { cat $@ | grep -i '^[a-z0-9]' | awk '{print $1}' | sed -f requirements/pipreqs_edits.sed | sort -f | uniq >ask.log && pip freeze | sed -f requirements/pipreqs_edits.sed | sort -f >got.log && diff -i ask.log got.log; }
 
+# Now test the deps
+ENV_PATH="${CONDA_ENVS}/deps_test"
+conda create -y -q -p $ENV_PATH python=3.6
+echo $ENV_PATH
+source activate $ENV_PATH
+python --version
+pip freeze | sort
+
+# Install all requirements, make sure they are mutually compatible
+pip install -r requirements/base.txt
+pipcheck requirements/base.txt
+
+# Install package
+python setup.py install
+pipcheck requirements/base.txt requirements/self.txt
+
+pip install -r requirements/optimizers.txt
+pipcheck requirements/base.txt requirements/self.txt requirements/optimizers.txt
+
+pip install -r requirements/test.txt
+pipcheck requirements/base.txt requirements/self.txt requirements/optimizers.txt requirements/test.txt
+
+pip install -r requirements/ipynb.txt
+pipcheck requirements/base.txt requirements/self.txt requirements/test.txt requirements/optimizers.txt requirements/ipynb.txt
+pip install -r requirements/docs.txt
+pipcheck requirements/base.txt requirements/self.txt requirements/test.txt requirements/optimizers.txt requirements/ipynb.txt requirements/docs.txt
+
+pip install -r requirements/tools.txt
+
+# Make sure .in file corresponds to what is imported
+nameonly <requirements/base.in >ask.log
+pipreqs bo_benchmark/  --ignore bo_benchmark/builtin_opt/ --savepath requirement_chk.in
+sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
+diff ask.log got.log
+
+nameonly <requirements/test.in >ask.log
+pipreqs test/ --savepath requirement_chk.in
+sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
+diff ask.log got.log
+
+nameonly <requirements/optimizers.in >ask.log
+pipreqs bo_benchmark/builtin_opt/ --savepath requirement_chk.in
+sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
+diff ask.log got.log
+
+nameonly <requirements/docs.in >ask.log
+pipreqs docs/ --savepath requirement_chk.in
+sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
+diff ask.log got.log
+
+nameonly <requirements/ipynb.in >ask.log
+jupyter nbconvert --to script notebooks/*.ipynb
+pipreqs notebooks/ --savepath requirement_chk.in
+sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
+diff ask.log got.log
+
+# Make sure txt file corresponds to pip compile
+# First copy the originals
+for f in requirements/*.txt; do cp -- "$f" "${f%.txt}.chk"; done
+# Now re-compile
+# no-upgrade means that by default it keeps the 2nd order dependency versions already in the requirements txt file
+# (otherwise it brings it to the very latest available version which often causes issues).
+pip-compile-multi -o txt --no-upgrade
+
+nameveronly <requirements/base.chk >ask.log
+sed -f requirements/pipreqs_edits.sed requirements/base.txt | nameveronly >got.log
+diff ask.log got.log
+
+nameveronly <requirements/test.chk >ask.log
+sed -f requirements/pipreqs_edits.sed requirements/test.txt | nameveronly >got.log
+diff ask.log got.log
+
+nameveronly <requirements/optimizers.chk | sed -f requirements/pipreqs_edits.sed >ask.log
+sed -f requirements/pipreqs_edits.sed requirements/optimizers.txt | nameveronly >got.log
+diff ask.log got.log
+
+nameveronly <requirements/ipynb.chk | sed -f requirements/pipreqs_edits.sed >ask.log
+sed -f requirements/pipreqs_edits.sed requirements/ipynb.txt | nameveronly >got.log
+diff ask.log got.log
+
+nameveronly <requirements/docs.chk | sed -f requirements/pipreqs_edits.sed >ask.log
+sed -f requirements/pipreqs_edits.sed requirements/docs.txt | nameveronly >got.log
+diff ask.log got.log
+
+nameveronly <requirements/tools.chk | sed -f requirements/pipreqs_edits.sed >ask.log
+sed -f requirements/pipreqs_edits.sed requirements/tools.txt | nameveronly >got.log
+diff ask.log got.log
+
+# Deactivate virtual environment
+conda deactivate
+
 # Set up environments for all Python versions and loop over them
 rm -rf "$CONDA_ENVS"
 for i in "${PY_VERSIONS[@]}"
 do
     # Now test the deps
-    ENV_PATH="${CONDA_ENVS}/deps_test"
+    ENV_PATH="${CONDA_ENVS}/unit_test"
     conda create -y -q -p $ENV_PATH python=$i
     echo $ENV_PATH
     source activate $ENV_PATH
     python --version
     pip freeze | sort
 
-    # Install all requirements, make sure they are mutually compatible
-    pip install -r requirements/base.txt
-    pipcheck requirements/base.txt
+    # Install all requirements
+    pip install -r requirements/test.txt
 
     # Install package
     python setup.py install
-    pipcheck requirements/base.txt requirements/self.txt
 
-    pip install -r requirements/optimizers.txt
-    pipcheck requirements/base.txt requirements/self.txt requirements/optimizers.txt
-
-    pip install -r requirements/test.txt
-    pipcheck requirements/base.txt requirements/self.txt requirements/optimizers.txt requirements/test.txt
+    # Run tests
     pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bo_benchmark --cov-report html
 
-    pip install -r requirements/ipynb.txt
-    pipcheck requirements/base.txt requirements/self.txt requirements/test.txt requirements/optimizers.txt requirements/ipynb.txt
-    pip install -r requirements/docs.txt
-    pipcheck requirements/base.txt requirements/self.txt requirements/test.txt requirements/optimizers.txt requirements/ipynb.txt requirements/docs.txt
-
-    pip install -r requirements/tools.txt
-
-    # Make sure .in file corresponds to what is imported
-    nameonly <requirements/base.in >ask.log
-    pipreqs bo_benchmark/  --ignore bo_benchmark/builtin_opt/ --savepath requirement_chk.in
-    sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
-    diff ask.log got.log
-
-    nameonly <requirements/test.in >ask.log
-    pipreqs test/ --savepath requirement_chk.in
-    sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
-    diff ask.log got.log
-
-    nameonly <requirements/optimizers.in >ask.log
-    pipreqs bo_benchmark/builtin_opt/ --savepath requirement_chk.in
-    sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
-    diff ask.log got.log
-
-    nameonly <requirements/docs.in >ask.log
-    pipreqs docs/ --savepath requirement_chk.in
-    sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
-    diff ask.log got.log
-
-    nameonly <requirements/ipynb.in >ask.log
-    jupyter nbconvert --to script notebooks/*.ipynb
-    pipreqs notebooks/ --savepath requirement_chk.in
-    sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
-    diff ask.log got.log
-
-    # Make sure txt file corresponds to pip compile
-    # First copy the originals
-    for f in requirements/*.txt; do cp -- "$f" "${f%.txt}.chk"; done
-    # Now re-compile
-    # no-upgrade means that by default it keeps the 2nd order dependency versions already in the requirements txt file
-    # (otherwise it brings it to the very latest available version which often causes issues).
-    pip-compile-multi -o txt --no-upgrade
-
-    nameveronly <requirements/base.chk >ask.log
-    sed -f requirements/pipreqs_edits.sed requirements/base.txt | nameveronly >got.log
-    diff ask.log got.log
-
-    nameveronly <requirements/test.chk >ask.log
-    sed -f requirements/pipreqs_edits.sed requirements/test.txt | nameveronly >got.log
-    diff ask.log got.log
-
-    nameveronly <requirements/optimizers.chk | sed -f requirements/pipreqs_edits.sed >ask.log
-    sed -f requirements/pipreqs_edits.sed requirements/optimizers.txt | nameveronly >got.log
-    diff ask.log got.log
-
-    nameveronly <requirements/ipynb.chk | sed -f requirements/pipreqs_edits.sed >ask.log
-    sed -f requirements/pipreqs_edits.sed requirements/ipynb.txt | nameveronly >got.log
-    diff ask.log got.log
-
-    nameveronly <requirements/docs.chk | sed -f requirements/pipreqs_edits.sed >ask.log
-    sed -f requirements/pipreqs_edits.sed requirements/docs.txt | nameveronly >got.log
-    diff ask.log got.log
-
-    nameveronly <requirements/tools.chk | sed -f requirements/pipreqs_edits.sed >ask.log
-    sed -f requirements/pipreqs_edits.sed requirements/tools.txt | nameveronly >got.log
-    diff ask.log got.log
-
-    # Deactivate virtual environment
     conda deactivate
 done

@@ -1,3 +1,4 @@
+detect-secrets==0.12.5
 ipykernel==5.1.1
 nbconvert==5.6.0
 pip-compile-multi==1.4.0
