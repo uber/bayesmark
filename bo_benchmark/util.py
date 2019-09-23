@@ -13,6 +13,7 @@
 # limitations under the License.
 """General utilities that should arguably be included in Python.
 """
+import shlex
 
 
 def all_unique(L):
@@ -118,6 +119,29 @@ def str_join_safe(delim, str_vec, append=False):
 
     joined_str = delim.join(str_vec)
     return joined_str
+
+
+def shell_join(argv, delim=" "):
+    """Join strings together in a way that is an inverse of `shlex` shell parsing into `argv`.
+
+    Basically, if the resulting string is passed as a command line argument then `sys.argv` will equal `argv`.
+
+    Parameters
+    ----------
+    argv : list(str)
+        List of arguments to collect into command line string. It will be escaped accordingly.
+    delim : str
+        Whitespace delimiter to join the strings.
+
+    Returns
+    -------
+    cmd : str
+        Properly escaped and joined command line string.
+    """
+    vv = [shlex.quote(vv) for vv in argv]
+    cmd = delim.join(vv)
+    assert shlex.split(cmd) == list(argv)
+    return cmd
 
 
 def chomp(str_val, ext="\n"):

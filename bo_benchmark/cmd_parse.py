@@ -30,6 +30,7 @@ from pathvalidate.argparse import filename, validate_filename, validate_filepath
 
 from bo_benchmark.constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAMES, OPTIMIZERS_FILE, PY_INTERPRETER
 from bo_benchmark.path_util import absopen, abspath
+from bo_benchmark.util import shell_join
 
 DEFAULT_REV_FILE = "version.log"
 
@@ -273,10 +274,11 @@ def general_parser(description):
     return parser
 
 
-def parse_args(parser):
+def parse_args(parser, argv=None):
     """Note that this argument parser does not check compatibility between clf/reg metric and data set.
     """
-    args = namespace_to_dict(parser.parse_args())
+    args = parser.parse_args(argv)
+    args = namespace_to_dict(args)
 
     args[CmdArgs.dry_run] = (CmdArgs.n_jobs in args) and (args[CmdArgs.n_jobs] > 0)
     # Does not check dir actually exists here, but whatever
@@ -311,5 +313,5 @@ def load_optimizer_settings(opt_root):
 
 
 def cmd_str():
-    cmd = "%s %s" % (PY_INTERPRETER, " ".join(sys.argv))
+    cmd = "%s %s" % (PY_INTERPRETER, shell_join(sys.argv))
     return cmd

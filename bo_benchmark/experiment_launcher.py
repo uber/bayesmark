@@ -31,7 +31,7 @@ from bo_benchmark.np_util import random as np_random
 from bo_benchmark.np_util import random_seed, strat_split
 from bo_benchmark.path_util import absopen
 from bo_benchmark.serialize import XRSerializer
-from bo_benchmark.util import range_str, str_join_safe, strict_sorted
+from bo_benchmark.util import range_str, shell_join, str_join_safe, strict_sorted
 
 # How much of uuid to put in job name to avoid name clashes
 UUID_JOB_CHARS = 7
@@ -40,6 +40,21 @@ UUID_JOB_CHARS = 7
 EXPERIMENT_ENTRY = "bob-exp"
 
 logger = logging.getLogger(__name__)
+
+
+def _is_arg_safe(ss):
+    """Check if str is safe as argument to argparse."""
+    if len(ss) == 0:
+        return False
+    safe = ss[0] != "-"
+    return safe
+
+
+def arg_safe_str(val):
+    ss = str(val)
+    if not _is_arg_safe(ss):
+        raise ValueError("%s is not safe for argparse" % ss)
+    return ss
 
 
 def gen_commands(args, opt_file_lookup, run_uuid):
@@ -61,8 +76,10 @@ def gen_commands(args, opt_file_lookup, run_uuid):
     iteration_key : (str, str, str, str)
         Tuple containing ``(trial, classifier, data, optimizer)`` to index the experiment.
     full_cmd : tuple(str)
-        Strings containing command and arguments to run a process with experiment. Join with whitespace to get string
-        with executable command.
+        Strings containing command and arguments to run a process with experiment. Join with whitespace or use
+        :func:`.util.shell_join` to get string with executable command. The command omits ``--opt-root`` which means it
+        will default to ``.`` if the command is executed. As such, the command assumes it is executed with
+        ``--opt-root`` as the working directory.
     """
     args_to_pass_thru = [CmdArgs.n_calls, CmdArgs.n_suggest, CmdArgs.db_root, CmdArgs.db]
     # This could be made simpler and avoid if statement if we just always pass dataroot, even if no custom data used.
@@ -99,15 +116,15 @@ def gen_commands(args, opt_file_lookup, run_uuid):
             sub_uuid = pyuuid.uuid5(run_uuid, iteration_id).hex
 
             # Build the argument list for subproc, passing some args thru
-            cmd_args_pass_thru = [[CMD_STR[vv][0], str(args[vv])] for vv in args_to_pass_thru]
+            cmd_args_pass_thru = [[CMD_STR[vv][0], arg_safe_str(args[vv])] for vv in args_to_pass_thru]
             # Technically, the optimizer is is not actually needed here for non-built in optimizers because it already
             # specified via the entry point: optimizer_wrapper_file
             cmd_args = [
-                [CMD_STR[CmdArgs.classifier][0], classifier],
-                [CMD_STR[CmdArgs.data][0], data],
-                [CMD_STR[CmdArgs.optimizer][0], optimizer],
-                [CMD_STR[CmdArgs.uuid][0], sub_uuid],
-                [CMD_STR[CmdArgs.metric][0], metric],
+                [CMD_STR[CmdArgs.classifier][0], arg_safe_str(classifier)],
+                [CMD_STR[CmdArgs.data][0], arg_safe_str(data)],
+                [CMD_STR[CmdArgs.optimizer][0], arg_safe_str(optimizer)],
+                [CMD_STR[CmdArgs.uuid][0], arg_safe_str(sub_uuid)],
+                [CMD_STR[CmdArgs.metric][0], arg_safe_str(metric)],
             ]
             cmd_args = tuple(sum(cmd_args + cmd_args_pass_thru, []))
             logger.info(" ".join(cmd_args))
@@ -119,6 +136,9 @@ def gen_commands(args, opt_file_lookup, run_uuid):
                 optimizer_wrapper_file = opt_file_lookup[optimizer]
                 assert optimizer_wrapper_file.endswith(".py"), "optimizer wrapper should a be .py file"
                 experiment_cmd = (PY_INTERPRETER, optimizer_wrapper_file)
+
+            # Check arg safe again, off elements in list need to be argsafe
+            assert all((_is_arg_safe(ss) == (ii % 2 == 1)) for ii, ss in enumerate(cmd_args))
 
             full_cmd = experiment_cmd + cmd_args
             yield iteration_key, full_cmd
@@ -156,7 +176,7 @@ def dry_run(args, opt_file_lookup, run_uuid, fp, random=np_random):
     dry_run_commands = {}
     G = gen_commands(args, opt_file_lookup, run_uuid)
     for (_, _, _, optimizer, _), full_cmd in G:
-        cmd_str = str_join_safe(" ", full_cmd)
+        cmd_str = shell_join(full_cmd)
         dry_run_commands.setdefault(optimizer, []).append(cmd_str)
 
     # Make sure we never have any empty jobs, which is a waste

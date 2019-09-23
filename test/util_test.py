@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import random as pyrandom
+import shlex
 
 from hypothesis import assume, given
 from hypothesis.strategies import floats, integers, iterables, lists, text
@@ -56,6 +57,13 @@ def test_str_join_safe_append(delim, str_vec0, str_vec):
 
     start = bobm_util.str_join_safe(delim, str_vec0, append=False)
     bobm_util.str_join_safe(delim, [start] + str_vec, append=True)
+
+
+@given(lists(text()))
+def test_shell_join(argv):
+    cmd = bobm_util.shell_join(argv, delim=" ")
+
+    assert shlex.split(cmd) == list(argv)
 
 
 @given(text(), text(min_size=1))

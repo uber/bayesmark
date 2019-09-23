@@ -116,8 +116,11 @@ def launcher_args_and_config(min_jobs=0):
 def test_gen_commands(args, run_uuid):
     args, opt_file_lookup = args
 
+    assume(all(launcher._is_arg_safe(ss) for ss in args.values() if isinstance(ss, str)))
+
     uniqify = [CmdArgs.optimizer, CmdArgs.data, CmdArgs.classifier, CmdArgs.metric]
     for uu in uniqify:
+        assume(all(launcher._is_arg_safe(ss) for ss in args[uu]))
         args[uu] = list(set(args[uu]))
 
     m_set = set(args[CmdArgs.metric])
@@ -135,8 +138,11 @@ def test_gen_commands(args, run_uuid):
 def test_dry_run(args, run_uuid, seed):
     args, opt_file_lookup = args
 
+    assume(all(launcher._is_arg_safe(ss) for ss in args.values() if isinstance(ss, str)))
+
     uniqify = [CmdArgs.optimizer, CmdArgs.data, CmdArgs.classifier, CmdArgs.metric]
     for uu in uniqify:
+        assume(all(launcher._is_arg_safe(ss) for ss in args[uu]))
         args[uu] = list(set(args[uu]))
 
     m_set = set(args[CmdArgs.metric])
