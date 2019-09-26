@@ -17,7 +17,7 @@ from io import StringIO
 from string import ascii_letters, digits
 
 import numpy as np
-from hypothesis import assume, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis.strategies import (
     booleans,
     fixed_dictionaries,
@@ -112,7 +112,7 @@ def launcher_args_and_config(min_jobs=0):
 
 
 @given(launcher_args_and_config(), uuids())
-@settings(deadline=None)
+@settings(deadline=None, suppress_health_check=(HealthCheck.too_slow,))
 def test_gen_commands(args, run_uuid):
     args, opt_file_lookup = args
 
@@ -134,7 +134,7 @@ def test_gen_commands(args, run_uuid):
 
 
 @given(launcher_args_and_config(min_jobs=1), uuids(), seeds())
-@settings(deadline=None)
+@settings(deadline=None, suppress_health_check=(HealthCheck.too_slow,))
 def test_dry_run(args, run_uuid, seed):
     args, opt_file_lookup = args
 
