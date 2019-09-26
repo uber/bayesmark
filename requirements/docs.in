@@ -1,3 +1,2 @@
 -r base.in
-recommonmark==0.5.0
 Sphinx==2.1.2

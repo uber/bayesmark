@@ -30,7 +30,7 @@ with open("requirements/ipynb.in") as f:
 ipynb_requirements = ipynb_requirements.replace("==", ">=").splitlines()  # Convert to non-pinned for setup.py
 ipynb_requirements = [pp for pp in ipynb_requirements if pp[0].isalnum()]
 
-with open("README.md") as f:
+with open("README.rst") as f:
     long_description = f.read()
 
 setup(
@@ -45,7 +45,7 @@ setup(
     install_requires=requirements,
     extras_require={"optimizers": opt_requirements, "notebooks": ipynb_requirements},
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     platforms=["any"],
     entry_points={
         "console_scripts": [

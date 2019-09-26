@@ -181,7 +181,7 @@ def compute_aggregates(perf_da, baseline_ds):
 
 
 def main():
-    """See README.md for instructions on calling analysis.
+    """See README for instructions on calling analysis.
     """
     description = "Analyze results from aggregated studies"
     args = parse_args(general_parser(description))

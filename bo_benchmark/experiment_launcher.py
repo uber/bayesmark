@@ -231,7 +231,7 @@ def real_run(args, opt_file_lookup, run_uuid):  # pragma: io
 
 
 def main():
-    """See README.md for instructions on calling launcher.
+    """See README for instructions on calling launcher.
     """
     description = "Launch series of studies across functions and optimizers"
     args = cmd.parse_args(cmd.launcher_parser(description))

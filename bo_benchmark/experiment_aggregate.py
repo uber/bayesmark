@@ -240,7 +240,7 @@ def load_experiments(uuid_list, db_root, dbid):  # pragma: io
 
 
 def main():
-    """See README.md for instructions on calling aggregate.
+    """See README for instructions on calling aggregate.
     """
     description = "Aggregate study results across functions and optimizers"
     args = parse_args(agg_parser(description))

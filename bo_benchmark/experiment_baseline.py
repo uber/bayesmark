@@ -150,7 +150,7 @@ def do_baseline(args):  # pragma: io
 
 
 def main():
-    """See README.md for instructions on calling baseline.
+    """See README for instructions on calling baseline.
     """
     description = "Aggregate the baselines for later analysis in benchmark"
     args = parse_args(general_parser(description))

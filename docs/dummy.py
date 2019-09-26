@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import recommonmark
 import sphinx
 
 # import extra deps and use it to keep pipreqs and flake8 happy
-for pkg in (recommonmark, sphinx):
+for pkg in (sphinx,):
     print("%s %s" % (pkg.__name__, pkg.__version__))

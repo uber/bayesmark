@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """See README.md for instructions on calling db_init.
+    """See README for instructions on calling db_init.
     """
     description = "Initialize the directories for running the experiments"
     args = cmd.parse_args(cmd.general_parser(description))
