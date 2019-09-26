@@ -9,7 +9,7 @@ The scoring system is about aggregating the function evaluations of the optimize
 
    S_{pmtn} = \textrm{cumm-min}_t F_{pmtn}\,.
 
-All of the aggregate quantities described here are computed by :func:`.experiment_analysis.compute_aggregates` (which is called by `bob-anal <#analyze-and-summarize-results>`_) in either the ``agg_result`` or ``summary`` xarray datasets. Additionally, the baseline performances are in the xarray dataset ``baseline_ds`` from :func:`.experiment_baseline.compute_baseline`. The baseline dataset can be generated via the ``bob-baseline`` command, but it is called automatically by ``bob-anal`` if needed.
+All of the aggregate quantities described here are computed by :func:`.experiment_analysis.compute_aggregates` (which is called by `bayesmark-anal <#analyze-and-summarize-results>`_) in either the ``agg_result`` or ``summary`` xarray datasets. Additionally, the baseline performances are in the xarray dataset ``baseline_ds`` from :func:`.experiment_baseline.compute_baseline`. The baseline dataset can be generated via the ``bayesmark-baseline`` command, but it is called automatically by ``bayesmark-anal`` if needed.
 
 Median scores
 -------------
@@ -96,6 +96,6 @@ Note that :math:`\textrm{norm-mean-perf}_{mt}` is, in aggregate, a linear transf
 Error bars
 ----------
 
-The datasets ``agg_result`` and ``summary`` also compute error bars in the form of ``LB_`` and ``UB_`` variables. These error bars do not consider the random variation in the baseline quantities from ``baseline_ds`` like ``opt`` and ``clip``. They are instead treated as fixed constant reference points. Therefore, they are computed by a different command ``bob-baseline``. The user can generate the baselines when they want, but since they are not considered a random quantity in the statistics they are not automatically generated from the experimental data (unless the baseline file ``derived/baseline.json`` is missing).
+The datasets ``agg_result`` and ``summary`` also compute error bars in the form of ``LB_`` and ``UB_`` variables. These error bars do not consider the random variation in the baseline quantities from ``baseline_ds`` like ``opt`` and ``clip``. They are instead treated as fixed constant reference points. Therefore, they are computed by a different command ``bayesmark-baseline``. The user can generate the baselines when they want, but since they are not considered a random quantity in the statistics they are not automatically generated from the experimental data (unless the baseline file ``derived/baseline.json`` is missing).
 
 Additionally, the error bars on the grand mean (``summary[PERF_MEAN]``) are computed by simply using t-statistic based error bars on the individual means. Under a "random effects" model, this does not actually lose any statistical power. However, this is computing the mean on the loss over sampling from new problems under the "same distribution" of benchmark problems. These error bars will be wider than if we computed the error bars on the grand mean over this particular set of benchmark problems.

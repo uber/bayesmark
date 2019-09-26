@@ -18,7 +18,7 @@ from hypothesis.strategies import integers, lists, sampled_from
 from hypothesis_gufunc.gufunc import gufunc_args
 from sklearn.preprocessing import robust_scale
 
-from bo_benchmark import stats
+from bayesmark import stats
 from hypothesis_util import close_enough, mfloats, probs, seeds
 
 

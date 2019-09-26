@@ -41,8 +41,8 @@ from sklearn.svm import SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle
 
-from bo_benchmark.constants import METRICS, MODEL_NAMES
-from bo_benchmark.data import METRICS_LOOKUP, ProblemType, load_data
+from bayesmark.constants import METRICS, MODEL_NAMES
+from bayesmark.data import METRICS_LOOKUP, ProblemType, load_data
 
 CV_SPLITS = 3  # 5 probably makes more sense, but will be slower.
 

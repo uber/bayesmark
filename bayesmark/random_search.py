@@ -15,8 +15,8 @@
 """
 import numpy as np
 
-from bo_benchmark import np_util
-from bo_benchmark.space import JointSpace
+from bayesmark import np_util
+from bayesmark.space import JointSpace
 
 
 def suggest_dict(X, y, meta, n_suggestions=1, random=np_util.random):

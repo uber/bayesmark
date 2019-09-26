@@ -28,7 +28,7 @@ from hypothesis_gufunc.extra.xr import (
     xr_vars,
 )
 
-import bo_benchmark.xr_util as xru
+import bayesmark.xr_util as xru
 
 xr_fill = _hashable
 

@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from bo_benchmark.util import all_unique
+from bayesmark.util import all_unique
 
 
 def is_simple_coords(coords, min_side=0, dims=None):

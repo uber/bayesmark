@@ -28,9 +28,9 @@ import git
 from git.exc import InvalidGitRepositoryError
 from pathvalidate.argparse import filename, validate_filename, validate_filepath
 
-from bo_benchmark.constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAMES, OPTIMIZERS_FILE, PY_INTERPRETER
-from bo_benchmark.path_util import absopen, abspath
-from bo_benchmark.util import shell_join
+from bayesmark.constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAMES, OPTIMIZERS_FILE, PY_INTERPRETER
+from bayesmark.path_util import absopen, abspath
+from bayesmark.util import shell_join
 
 DEFAULT_REV_FILE = "version.log"
 
@@ -156,7 +156,7 @@ def load_rev_number():
 
     # Get rev from version file (if running inside the pip-installable wheel without the git repo)
     try:
-        from bo_benchmark import version
+        from bayesmark import version
 
         rev_file = version.VERSION
     except ImportError:

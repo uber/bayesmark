@@ -22,17 +22,17 @@ from time import time
 import numpy as np
 import xarray as xr
 
-import bo_benchmark.cmd_parse as cmd
-import bo_benchmark.constants as cc
-import bo_benchmark.random_search as rs
-from bo_benchmark.builtin_opt.config import CONFIG
-from bo_benchmark.cmd_parse import CmdArgs
-from bo_benchmark.constants import ITER, SUGGEST
-from bo_benchmark.data import METRICS_LOOKUP, get_problem_type
-from bo_benchmark.np_util import random_seed
-from bo_benchmark.serialize import XRSerializer
-from bo_benchmark.signatures import get_func_signature
-from bo_benchmark.sklearn_funcs import SklearnModel
+import bayesmark.cmd_parse as cmd
+import bayesmark.constants as cc
+import bayesmark.random_search as rs
+from bayesmark.builtin_opt.config import CONFIG
+from bayesmark.cmd_parse import CmdArgs
+from bayesmark.constants import ITER, SUGGEST
+from bayesmark.data import METRICS_LOOKUP, get_problem_type
+from bayesmark.np_util import random_seed
+from bayesmark.serialize import XRSerializer
+from bayesmark.signatures import get_func_signature
+from bayesmark.sklearn_funcs import SklearnModel
 
 logger = logging.getLogger(__name__)
 
@@ -412,17 +412,17 @@ def _get_opt_class(opt_name):
     wrapper_file, _ = CONFIG[opt_name]
 
     if wrapper_file == "hyperopt_optimizer.py":
-        import bo_benchmark.builtin_opt.hyperopt_optimizer as opt
+        import bayesmark.builtin_opt.hyperopt_optimizer as opt
     elif wrapper_file == "nevergrad_optimizer.py":
-        import bo_benchmark.builtin_opt.nevergrad_optimizer as opt
+        import bayesmark.builtin_opt.nevergrad_optimizer as opt
     elif wrapper_file == "opentuner_optimizer.py":
-        import bo_benchmark.builtin_opt.opentuner_optimizer as opt
+        import bayesmark.builtin_opt.opentuner_optimizer as opt
     elif wrapper_file == "pysot_optimizer.py":
-        import bo_benchmark.builtin_opt.pysot_optimizer as opt
+        import bayesmark.builtin_opt.pysot_optimizer as opt
     elif wrapper_file == "random_optimizer.py":
-        import bo_benchmark.builtin_opt.random_optimizer as opt
+        import bayesmark.builtin_opt.random_optimizer as opt
     elif wrapper_file == "scikit_optimizer.py":
-        import bo_benchmark.builtin_opt.scikit_optimizer as opt
+        import bayesmark.builtin_opt.scikit_optimizer as opt
     else:
         assert False, "CONFIG for built in optimizers has added a new optimizer, but not updated this function."
 

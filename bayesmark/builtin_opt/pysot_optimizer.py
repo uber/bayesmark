@@ -21,8 +21,8 @@ from pySOT.optimization_problems import OptimizationProblem
 from pySOT.strategy import SRBFStrategy
 from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant, SurrogateUnitBox
 
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
-from bo_benchmark.space import JointSpace
+from bayesmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.space import JointSpace
 
 
 class PySOTOptimizer(AbstractOptimizer):

@@ -15,10 +15,10 @@ import numpy as np
 from hypothesis import assume, given, settings
 from hypothesis.strategies import sampled_from
 
-from bo_benchmark import data
-from bo_benchmark import sklearn_funcs as skf
-from bo_benchmark.constants import DATA_LOADER_NAMES, METRICS, MODEL_NAMES
-from bo_benchmark.random_search import suggest_dict
+from bayesmark import data
+from bayesmark import sklearn_funcs as skf
+from bayesmark.constants import DATA_LOADER_NAMES, METRICS, MODEL_NAMES
+from bayesmark.random_search import suggest_dict
 from hypothesis_util import seeds
 
 

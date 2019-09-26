@@ -15,7 +15,7 @@ import warnings
 
 from hypothesis import given, settings
 
-import bo_benchmark.experiment_baseline as base
+import bayesmark.experiment_baseline as base
 from util import perf_dataarrays
 
 

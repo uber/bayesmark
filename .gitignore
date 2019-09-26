@@ -8,7 +8,7 @@
 !.travis.yml
 
 # For wheels
-bo_benchmark/version.py
+bayesmark/version.py
 dist/
 
 # Java

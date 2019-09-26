@@ -18,26 +18,16 @@ import warnings
 
 import numpy as np
 
-import bo_benchmark.constants as cc
-import bo_benchmark.expected_max as em
-import bo_benchmark.quantiles as qt
-import bo_benchmark.xr_util as xru
-from bo_benchmark.cmd_parse import CmdArgs, general_parser, parse_args
-from bo_benchmark.constants import (
-    ARG_DELIM,
-    ITER,
-    METHOD,
-    PERF_BEST,
-    PERF_CLIP,
-    PERF_MEAN,
-    PERF_MED,
-    SUGGEST,
-    TEST_CASE,
-)
-from bo_benchmark.experiment_aggregate import validate_agg_perf
-from bo_benchmark.serialize import XRSerializer
-from bo_benchmark.util import str_join_safe
-from bo_benchmark.xr_util import ds_like_mixed
+import bayesmark.constants as cc
+import bayesmark.expected_max as em
+import bayesmark.quantiles as qt
+import bayesmark.xr_util as xru
+from bayesmark.cmd_parse import CmdArgs, general_parser, parse_args
+from bayesmark.constants import ARG_DELIM, ITER, METHOD, PERF_BEST, PERF_CLIP, PERF_MEAN, PERF_MED, SUGGEST, TEST_CASE
+from bayesmark.experiment_aggregate import validate_agg_perf
+from bayesmark.serialize import XRSerializer
+from bayesmark.util import str_join_safe
+from bayesmark.xr_util import ds_like_mixed
 
 # Mathematical settings
 # We could move these to constants to eliminate repetition but we will probably phase out anyway

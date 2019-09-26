@@ -16,7 +16,7 @@
 import numpy as np
 import scipy.stats as ss
 
-from bo_benchmark.np_util import isclose_lte
+from bayesmark.np_util import isclose_lte
 
 
 def ensure_shape(x, y):

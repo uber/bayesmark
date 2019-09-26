@@ -19,9 +19,9 @@ from hypothesis_gufunc.gufunc import gufunc_args as gufunc
 from scipy.interpolate import interp1d
 from sklearn.preprocessing import LabelBinarizer
 
-import bo_benchmark.space as sp
-from bo_benchmark.np_util import linear_rescale
-from bo_benchmark.space import CAT_DTYPE, CAT_KIND, CAT_NATIVE_DTYPE
+import bayesmark.space as sp
+from bayesmark.np_util import linear_rescale
+from bayesmark.space import CAT_DTYPE, CAT_KIND, CAT_NATIVE_DTYPE
 from hypothesis_util import broadcast_tester, close_enough, gufunc_floats
 from util import space_configs
 

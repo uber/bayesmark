@@ -13,7 +13,7 @@
 # limitations under the License.
 from setuptools import find_packages, setup
 
-CMD_NAME = "bob"
+CMD_NAME = "bayesmark"
 
 # Derive install requires from base.in first order requirements
 with open("requirements/base.in") as f:
@@ -34,10 +34,10 @@ with open("README.rst") as f:
     long_description = f.read()
 
 setup(
-    name="bo_benchmark",
+    name="bayesmark",
     version="0.0.1",
     packages=find_packages(),
-    url="https://github.com/uber/bo-benchmark/",
+    url="https://github.com/uber/bayesmark/",
     author="Ryan Turner",
     author_email=("rdturnermtl@github.com"),
     license="Apache v2",
@@ -49,12 +49,12 @@ setup(
     platforms=["any"],
     entry_points={
         "console_scripts": [
-            CMD_NAME + "-init = bo_benchmark.experiment_db_init:main",
-            CMD_NAME + "-launch = bo_benchmark.experiment_launcher:main",
-            CMD_NAME + "-agg = bo_benchmark.experiment_aggregate:main",
-            CMD_NAME + "-baseline = bo_benchmark.experiment_baseline:main",
-            CMD_NAME + "-anal = bo_benchmark.experiment_analysis:main",
-            CMD_NAME + "-exp = bo_benchmark.experiment:main",
+            CMD_NAME + "-init = bayesmark.experiment_db_init:main",
+            CMD_NAME + "-launch = bayesmark.experiment_launcher:main",
+            CMD_NAME + "-agg = bayesmark.experiment_aggregate:main",
+            CMD_NAME + "-baseline = bayesmark.experiment_baseline:main",
+            CMD_NAME + "-anal = bayesmark.experiment_analysis:main",
+            CMD_NAME + "-exp = bayesmark.experiment:main",
         ]
     },
 )

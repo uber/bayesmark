@@ -1,8 +1,8 @@
 Installation
 ============
 
-.. image:: https://api.travis-ci.com/uber/bo-benchmark.png?token=RSemjpisB7uiZv78DVwd&branch=master
-   :target: https://travis-ci.com/uber/bo-benchmark
+.. image:: https://api.travis-ci.com/uber/bayesmark.png?token=RSemjpisB7uiZv78DVwd&branch=master
+   :target: https://travis-ci.com/uber/bayesmark
    :alt:
 
 This project provides a benchmark framework to easily compare Bayesian optimization methods on real machine learning tasks.
@@ -17,13 +17,13 @@ The core package itself can be installed with:
 
 .. code-block:: bash
 
-   pip install bo-benchmark
+   pip install bayesmark
 
 However, to also require installation of all the "built in" optimizers for evaluation, run:
 
 .. code-block:: bash
 
-   pip install bo-benchmark[optimizers]
+   pip install bayesmark[optimizers]
 
 It is also possible to use the same pinned dependencies we used in testing by `installing from the repo <#install-in-editable-mode>`_.
 
@@ -31,9 +31,9 @@ Building an environment to run the included notebooks can be done with:
 
 .. code-block:: bash
 
-   pip install bo-benchmark[notebooks]
+   pip install bayesmark[notebooks]
 
-Or, ``bo-benchmark[optimizers,notebooks]`` can be used.
+Or, ``bayesmark[optimizers,notebooks]`` can be used.
 
 A quick example of running the benchmark is `here <#example>`_.
 
@@ -69,7 +69,7 @@ The experiments are run using the experiment launcher, which has the following i
 
 .. code-block::
 
-   usage: bob-launch [-h] [-dir DB_ROOT] [-odir OPTIMIZER_ROOT] [-v] [-u UUID]
+   usage: bayesmark-launch [-h] [-dir DB_ROOT] [-odir OPTIMIZER_ROOT] [-v] [-u UUID]
                      [-dr DATA_ROOT] [-b DB] [-o OPTIMIZER [OPTIMIZER ...]]
                      [-d DATA [DATA ...]]
                      [-c [{DT,MLP-adam,MLP-sgd,RF,SVM,ada,kNN,lasso,linear} ...]]
@@ -110,7 +110,7 @@ The arguments are:
      -ofile JOBS_FILE, --jobs-file JOBS_FILE
                            a jobs file with all commands to be run
 
-The output files will be placed in ``[DB_ROOT]/[DBID]``. If ``DBID`` is not specified, it will be a randomly created subdirectory with a new name to avoid overwriting previous experiments. The path to ``DBID`` is shown at the beginning of ``stdout`` when running ``bob-launch``. In general, let the launcher create and setup ``DBID`` unless you are appending to a previous experiment, in which case, specify the existing ``DBID``.
+The output files will be placed in ``[DB_ROOT]/[DBID]``. If ``DBID`` is not specified, it will be a randomly created subdirectory with a new name to avoid overwriting previous experiments. The path to ``DBID`` is shown at the beginning of ``stdout`` when running ``bayesmark-launch``. In general, let the launcher create and setup ``DBID`` unless you are appending to a previous experiment, in which case, specify the existing ``DBID``.
 
 The launcher's sequence of commands can be accessed programmatically via :func:`.experiment_launcher.gen_commands`. The individual experiments can be launched programmatically via :func:`.experiment.run_sklearn_study`.
 
@@ -147,7 +147,7 @@ The data argument ``-d`` allows a list containing the "built-in" data sets:
 
 or, it can refer to a custom ``csv`` file, which is the name of file in the folder specified by ``--data-root``. It also follows the convention that regression data sets start with ``reg-`` and classification data sets start with ``clf-``. For example, the classification data set in ``[DATA_ROOT]/clf-foo.csv`` is specified with ``-d clf-foo``.
 
-The ``csv`` file can be anything readable by pandas, but we assume the final column is the target and all other columns are features. The target column should be integer for classification data and float for regression. The features should float (or ``str`` for categorical variable columns). See ``bo_benchmark.data.load_data`` for more information.
+The ``csv`` file can be anything readable by pandas, but we assume the final column is the target and all other columns are features. The target column should be integer for classification data and float for regression. The features should float (or ``str`` for categorical variable columns). See ``bayesmark.data.load_data`` for more information.
 
 Dry run for cluster jobs
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -159,10 +159,10 @@ A dry run will generate a command file (e.g., ``jobs.txt``) like the following (
 .. code-block::
 
    # running: {'--uuid': None, '-db-root': '/foo', '--opt-root': '/example_opt_root', '--data-root': None, '--db': 'bo_example_folder', '--opt': ['RandomSearch', 'PySOT'], '--data': None, '--classifier': ['SVM', 'DT'], '--metric': None, '--calls': 15, '--suggestions': 1, '--repeat': 3, '--num-jobs': 50, '--jobs-file': '/jobs.txt', '--verbose': False, 'dry_run': True, 'rev': '9a14ef2', 'opt_rev': None}
-   # cmd: python bob-launch -n 15 -r 3 -dir foo -o RandomSearch PySOT -c SVM DT -nj 50 -b bo_example_folder
-   job_e2b63a9_00 bob-exp -c SVM -d diabetes -o PySOT -u 079a155f03095d2ba414a5d2cedde08c -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d boston -o RandomSearch -u 400e4c0be8295ad59db22d9b5f31d153 -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d digits -o RandomSearch -u fe73a2aa960a5e3f8d78bfc4bcf51428 -m acc -n 15 -p 1 -dir foo -b bo_example_folder
-   job_e2b63a9_01 bob-exp -c DT -d diabetes -o PySOT -u db1d9297948554e096006c172a0486fb -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d boston -o RandomSearch -u 7148f690ed6a543890639cc59db8320b -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c SVM -d breast -o PySOT -u 72c104ba1b6d5bb8a546b0064a7c52b1 -m nll -n 15 -p 1 -dir foo -b bo_example_folder
-   job_e2b63a9_02 bob-exp -c SVM -d iris -o PySOT -u cc63b2c1e4315a9aac0f5f7b496bfb0f -m nll -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c DT -d breast -o RandomSearch -u aec62e1c8b5552e6b12836f0c59c1681 -m nll -n 15 -p 1 -dir foo -b bo_example_folder && bob-exp -c DT -d digits -o RandomSearch -u 4d0a175d56105b6bb3055c3b62937b2d -m acc -n 15 -p 1 -dir foo -b bo_example_folder
+   # cmd: python bayesmark-launch -n 15 -r 3 -dir foo -o RandomSearch PySOT -c SVM DT -nj 50 -b bo_example_folder
+   job_e2b63a9_00 bayesmark-exp -c SVM -d diabetes -o PySOT -u 079a155f03095d2ba414a5d2cedde08c -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bayesmark-exp -c SVM -d boston -o RandomSearch -u 400e4c0be8295ad59db22d9b5f31d153 -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bayesmark-exp -c SVM -d digits -o RandomSearch -u fe73a2aa960a5e3f8d78bfc4bcf51428 -m acc -n 15 -p 1 -dir foo -b bo_example_folder
+   job_e2b63a9_01 bayesmark-exp -c DT -d diabetes -o PySOT -u db1d9297948554e096006c172a0486fb -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bayesmark-exp -c SVM -d boston -o RandomSearch -u 7148f690ed6a543890639cc59db8320b -m mse -n 15 -p 1 -dir foo -b bo_example_folder && bayesmark-exp -c SVM -d breast -o PySOT -u 72c104ba1b6d5bb8a546b0064a7c52b1 -m nll -n 15 -p 1 -dir foo -b bo_example_folder
+   job_e2b63a9_02 bayesmark-exp -c SVM -d iris -o PySOT -u cc63b2c1e4315a9aac0f5f7b496bfb0f -m nll -n 15 -p 1 -dir foo -b bo_example_folder && bayesmark-exp -c DT -d breast -o RandomSearch -u aec62e1c8b5552e6b12836f0c59c1681 -m nll -n 15 -p 1 -dir foo -b bo_example_folder && bayesmark-exp -c DT -d digits -o RandomSearch -u 4d0a175d56105b6bb3055c3b62937b2d -m acc -n 15 -p 1 -dir foo -b bo_example_folder
    ...
 
 This package does not have built in support for deploying these jobs on a cluster or cloud environment (.e.g., AWS).
@@ -179,7 +179,7 @@ Next to aggregate all the experiment files into combined (json) files we need to
 
 .. code-block::
 
-   usage: bob-agg [-h] [-dir DB_ROOT] [-odir OPTIMIZER_ROOT] [-v] -b DB [-rv]
+   usage: bayesmark-agg [-h] [-dir DB_ROOT] [-odir OPTIMIZER_ROOT] [-v] -b DB [-rv]
 
 The arguments are:
 
@@ -195,7 +195,7 @@ The arguments are:
      -rv, --ravel          ravel all studies to store batch suggestions as if
                            they were serial
 
-The ``DB_ROOT`` must match the folder from the launcher ``bob-launch``, and ``DBID`` must match that displayed from the launcher as well. The aggregate files are found in ``[DB_ROOT]/[DBID]/derived``.
+The ``DB_ROOT`` must match the folder from the launcher ``bayesmark-launch``, and ``DBID`` must match that displayed from the launcher as well. The aggregate files are found in ``[DB_ROOT]/[DBID]/derived``.
 
 The result aggregation can be done programmatically via :func:`.experiment_aggregate.concat_experiments`.
 
@@ -206,7 +206,7 @@ Finally, to run a statistical analysis presenting a summary of the experiments w
 
 .. code-block::
 
-   usage: bob-anal [-h] [-dir DB_ROOT] [-odir OPTIMIZER_ROOT] [-v] -b DB
+   usage: bayesmark-anal [-h] [-dir DB_ROOT] [-odir OPTIMIZER_ROOT] [-v] -b DB
 
 The arguments are:
 
@@ -220,9 +220,9 @@ The arguments are:
      -v, --verbose         print the study logs to console
      -b DB, --db DB        database ID of this benchmark experiment
 
-The ``DB_ROOT`` must match the folder from the launcher ``bob-launch``, and ``DBID`` must match that displayed from the launcher as well. The aggregate files are found in ``[DB_ROOT]/[DBID]/derived``.
+The ``DB_ROOT`` must match the folder from the launcher ``bayesmark-launch``, and ``DBID`` must match that displayed from the launcher as well. The aggregate files are found in ``[DB_ROOT]/[DBID]/derived``.
 
-The ``bob-anal`` command looks for a ``baseline.json`` file in ``[DB_ROOT]/[DBID]/derived``, which states the best possible and random search performance. If no such file is present, ``bob-anal`` automatically calls ``bob-baseline`` to build it. The baselines are inferred from the random search performance in the logs. The baseline values are considered fixed (not random) quantities when ``bob-anal`` builds confidence intervals. Therefore, we allow the user to leave them fixed and do not rebuild them when ``bob-anal`` is called if a baselines file is already present.
+The ``bayesmark-anal`` command looks for a ``baseline.json`` file in ``[DB_ROOT]/[DBID]/derived``, which states the best possible and random search performance. If no such file is present, ``bayesmark-anal`` automatically calls ``bayesmark-baseline`` to build it. The baselines are inferred from the random search performance in the logs. The baseline values are considered fixed (not random) quantities when ``bayesmark-anal`` builds confidence intervals. Therefore, we allow the user to leave them fixed and do not rebuild them when ``bayesmark-anal`` is called if a baselines file is already present.
 
 The result analysis can be done programmatically via :func:`.experiment_analysis.compute_aggregates`, and the baseline computation via :func:`.experiment_baseline.compute_baseline`.
 
@@ -240,7 +240,7 @@ After finishing the setup (environment) a small-scale serial can be run as follo
    > DBID=bo_example_folder
    > mkdir $DB_ROOT
    > # experiments
-   > bob-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT -c SVM DT -v
+   > bayesmark-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT -c SVM DT -v
    Supply --uuid 3adc3182635e44ea96969d267591f034 to reproduce this run.
    Supply --dbid bo_example_folder to append to this experiment or reproduce jobs file.
    User must ensure equal reps of each optimizer for unbiased results
@@ -251,9 +251,9 @@ After finishing the setup (environment) a small-scale serial can be run as follo
    0 failures of benchmark script after 144 studies.
    done
    > # aggregate
-   > bob-agg -dir $DB_ROOT -b $DBID
+   > bayesmark-agg -dir $DB_ROOT -b $DBID
    > # analyze
-   > bob-anal -dir $DB_ROOT -b $DBID -v
+   > bayesmark-anal -dir $DB_ROOT -b $DBID -v
    ...
    median score @ 15:
    optimizer
@@ -284,7 +284,7 @@ To setup the kernel for running the notebooks use:
 
    virtualenv bobm_ipynb --python=python3.6
    source ./bobm_ipynb/bin/activate
-   pip install bo-benchmark[notebooks]
+   pip install bayesmark[notebooks]
    python -m ipykernel install --name=bobm_ipynb --user
 
 Now, the notebooks for plotting can be run with the command ``jupyter notebook`` and selecting the kernel ``bobm_ipynb``.
@@ -295,7 +295,7 @@ It is also possible to convert the notebooks to an HTML report at the command li
 
    jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
 
-The output file will be in ``./notebooks/plot_mean_score.html``. See the ``nbconvert`` `documentation <https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats>`_ for more output formats. By default, the notebooks look in ``./notebooks/bo_example_folder/`` for the ``summary.json`` from ``bob-anal``.
+The output file will be in ``./notebooks/plot_mean_score.html``. See the ``nbconvert`` `documentation <https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats>`_ for more output formats. By default, the notebooks look in ``./notebooks/bo_example_folder/`` for the ``summary.json`` from ``bayesmark-anal``.
 
 To run ``plot_test_case.ipynb`` use the command:
 
@@ -308,7 +308,7 @@ The ``--ExecutePreprocessor.timeout=600`` timeout increase is needed due to the 
 Adding a new optimizer
 ======================
 
-All optimizers in this benchmark are required to follow the interface specified of the ``AbstractOptimizer`` class in ``bo_benchmark.abstract_optimizer``. In general, this requires creating a wrapper class around the new optimizer. The wrapper classes must all be placed in a folder referred to by the ``--opt-root`` argument. This folder must also contain the ``config.json`` folder.
+All optimizers in this benchmark are required to follow the interface specified of the ``AbstractOptimizer`` class in ``bayesmark.abstract_optimizer``. In general, this requires creating a wrapper class around the new optimizer. The wrapper classes must all be placed in a folder referred to by the ``--opt-root`` argument. This folder must also contain the ``config.json`` folder.
 
 The interface is simple, one must merely implement the ``suggest`` and ``observe`` functions. The ``suggest`` function generates new guesses for evaluating the function. Once evaluated, the function evaluations are passed to the ``observe`` function. The objective function is *not* evaluated by the optimizer class. The objective function is evaluated on outside and results are passed to ``observe``. This is the correct setup for Bayesian optimization because:
 
@@ -322,8 +322,8 @@ The implementation of the wrapper will look like the following:
 
 .. code-block:: python
 
-   from bo_benchmark.abstract_optimizer import AbstractOptimizer
-   from bo_benchmark.experiment import experiment_main
+   from bayesmark.abstract_optimizer import AbstractOptimizer
+   from bayesmark.experiment import experiment_main
 
 
    class NewOptimizerName(AbstractOptimizer):
@@ -418,7 +418,7 @@ To run the benchmarks using a new optimizer, simply provide its name (from ``con
 
 .. code-block:: bash
 
-   bob-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT-New -c SVM DT --opt-root ./example_opt_root -v
+   bayesmark-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT-New -c SVM DT --opt-root ./example_opt_root -v
 
 Here, we are using the example ``PySOT-New`` wrapper from the ``example_opt_root`` folder in the git repo. It is equivalent to the builtin ``PySOT``, but gives an example of how to provide a new custom optimizer.
 
@@ -442,21 +442,21 @@ Then clone the repo in your git directory ``$GIT``:
 .. code-block:: bash
 
    cd $GIT
-   git clone https://github.com/uber/bo-benchmark.git
+   git clone https://github.com/uber/bayesmark.git
 
 Inside your virtual environments folder ``$ENVS``, make the environment:
 
 .. code-block:: bash
 
    cd $ENVS
-   virtualenv bo_benchmark --python=python3.6
-   source $ENVS/bo_benchmark/bin/activate
+   virtualenv bayesmark --python=python3.6
+   source $ENVS/bayesmark/bin/activate
 
 Now we can install the pip dependencies. Move back into your git directory and run
 
 .. code-block:: bash
 
-   cd $GIT/bo-benchmark
+   cd $GIT/bayesmark
    pip install -r requirements/base.txt
    pip install -r requirements/optimizers.txt
    pip install -e .  # Install the benchmark itself
@@ -471,28 +471,28 @@ First, we need to setup some needed tools:
 .. code-block:: bash
 
    cd $ENVS
-   virtualenv bo_benchmark_tools --python=python3.6
-   source $ENVS/bo_benchmark_tools/bin/activate
-   pip install -r $GIT/bo-benchmark/requirements/tools.txt
+   virtualenv bayesmark_tools --python=python3.6
+   source $ENVS/bayesmark_tools/bin/activate
+   pip install -r $GIT/bayesmark/requirements/tools.txt
 
-To install the pre-commit hooks for contributing run (in the ``bo_benchmark_tools`` environment):
+To install the pre-commit hooks for contributing run (in the ``bayesmark_tools`` environment):
 
 .. code-block:: bash
 
-   cd $GIT/bo-benchmark
+   cd $GIT/bayesmark
    pre-commit install
 
 To rebuild the requirements, we can run:
 
 .. code-block:: bash
 
-   cd $GIT/bo-benchmark
+   cd $GIT/bayesmark
    # Get py files from notebooks to analyze
    jupyter nbconvert --to script notebooks/*.ipynb
    # Generate the .in files (but pins to latest, which we might not want)
-   pipreqs bo_benchmark/ --ignore bo_benchmark/builtin_opt/ --savepath requirements/base.in
+   pipreqs bayesmark/ --ignore bayesmark/builtin_opt/ --savepath requirements/base.in
    pipreqs test/ --savepath requirements/test.in
-   pipreqs bo_benchmark/builtin_opt/ --savepath requirements/optimizers.in
+   pipreqs bayesmark/builtin_opt/ --savepath requirements/optimizers.in
    pipreqs notebooks/ --savepath requirements/ipynb.in
    pipreqs docs/ --savepath requirements/docs.in
    # Regenerate the .txt files from .in files
@@ -506,15 +506,15 @@ First setup the environment for building with ``Sphinx``:
 .. code-block:: bash
 
    cd $ENVS
-   virtualenv bo_benchmark_docs --python=python3.6
-   source $ENVS/bo_benchmark_docs/bin/activate
-   pip install -r $GIT/bo-benchmark/requirements/docs.txt
+   virtualenv bayesmark_docs --python=python3.6
+   source $ENVS/bayesmark_docs/bin/activate
+   pip install -r $GIT/bayesmark/requirements/docs.txt
 
 Then we can do the build:
 
 .. code-block:: bash
 
-   cd $GIT/bo-benchmark/docs
+   cd $GIT/bayesmark/docs
    make all
    open _build/html/index.html
 
@@ -527,7 +527,7 @@ The tests for this package can be run with:
 
 .. code-block:: bash
 
-   cd $GIT/bo-benchmark
+   cd $GIT/bayesmark
    ./test.sh
 
 The script creates a conda environment using the requirements found in ``requirements/test.txt``.
@@ -540,15 +540,15 @@ Or if we only want to run the unit tests and not check the adequacy of the requi
 
    # Setup environment
    cd $ENVS
-   virtualenv bo_benchmark_test --python=python3.6
-   source $ENVS/bo_benchmark_test/bin/activate
-   pip install -r $GIT/bo-benchmark/requirements/test.txt
-   pip install -e $GIT/bo-benchmark
+   virtualenv bayesmark_test --python=python3.6
+   source $ENVS/bayesmark_test/bin/activate
+   pip install -r $GIT/bayesmark/requirements/test.txt
+   pip install -e $GIT/bayesmark
    # Now run tests
-   cd $GIT/bo-benchmark/
-   pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bo_benchmark --cov-report html
+   cd $GIT/bayesmark/
+   pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bayesmark --cov-report html
 
-A code coverage report will also be produced in ``$GIT/bo-benchmark/htmlcov/index.html``.
+A code coverage report will also be produced in ``$GIT/bayesmark/htmlcov/index.html``.
 
 Deployment
 ----------
@@ -557,7 +557,7 @@ The wheel (tar ball) for deployment as a pip installable package can be built us
 
 .. code-block:: bash
 
-   cd $GIT/bo-benchmark/
+   cd $GIT/bayesmark/
    ./build_wheel.sh
 
 Links

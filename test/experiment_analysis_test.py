@@ -13,9 +13,9 @@
 # limitations under the License.
 from hypothesis import given, settings
 
-import bo_benchmark.experiment_baseline as base
-from bo_benchmark import experiment_analysis as anal
-from bo_benchmark.constants import TRIAL
+import bayesmark.experiment_baseline as base
+from bayesmark import experiment_analysis as anal
+from bayesmark.constants import TRIAL
 from util import perf_dataarrays
 
 

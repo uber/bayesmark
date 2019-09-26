@@ -17,7 +17,7 @@ from hypothesis import assume, given
 from hypothesis.strategies import floats, integers
 from hypothesis_gufunc.gufunc import gufunc_args as gufunc
 
-import bo_benchmark.quantiles as qt
+import bayesmark.quantiles as qt
 from hypothesis_util import broadcast_tester, gufunc_floats, multi_broadcast_tester
 
 # We could use nextafter to get closer to limits, but still creates numerics

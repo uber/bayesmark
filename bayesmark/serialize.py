@@ -24,8 +24,8 @@ from tempfile import mkdtemp
 import xarray as xr
 from pathvalidate.argparse import validate_filename, validate_filepath
 
-from bo_benchmark.path_util import join_safe_r, join_safe_w
-from bo_benchmark.util import chomp, str_join_safe
+from bayesmark.path_util import join_safe_r, join_safe_w
+from bayesmark.util import chomp, str_join_safe
 
 NEWLINE = "\n"  # Just to be explicit, in case this ever gets run on Windows
 PREFIX_FMT = "bo_%Y%m%d_%H%M%S_"  # The format we use for generating a new database name if none is specified

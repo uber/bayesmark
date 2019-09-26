@@ -15,10 +15,10 @@
 """
 import logging
 
-import bo_benchmark.cmd_parse as cmd
-from bo_benchmark.cmd_parse import CmdArgs
-from bo_benchmark.constants import EXP_VARS
-from bo_benchmark.serialize import XRSerializer
+import bayesmark.cmd_parse as cmd
+from bayesmark.cmd_parse import CmdArgs
+from bayesmark.constants import EXP_VARS
+from bayesmark.serialize import XRSerializer
 
 EXIST_OK = True
 

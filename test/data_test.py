@@ -14,7 +14,7 @@
 from hypothesis import given
 from hypothesis.strategies import from_regex, sampled_from
 
-from bo_benchmark import data
+from bayesmark import data
 
 DATA_NAMES = sorted(data.DATA_LOADERS.keys())
 

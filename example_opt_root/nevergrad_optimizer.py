@@ -3,10 +3,10 @@ import numpy as np
 from nevergrad import instrumentation as inst
 from scipy.stats import norm
 
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
-from bo_benchmark.experiment import experiment_main
-from bo_benchmark.np_util import linear_rescale
-from bo_benchmark.space import Real
+from bayesmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.experiment import experiment_main
+from bayesmark.np_util import linear_rescale
+from bayesmark.space import Real
 
 
 class NevergradOptimizer(AbstractOptimizer):

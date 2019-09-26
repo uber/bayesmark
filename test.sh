@@ -98,7 +98,7 @@ pip install -r requirements/tools.txt
 
 # Make sure .in file corresponds to what is imported
 nameonly <requirements/base.in >ask.log
-pipreqs bo_benchmark/  --ignore bo_benchmark/builtin_opt/ --savepath requirement_chk.in
+pipreqs bayesmark/  --ignore bayesmark/builtin_opt/ --savepath requirement_chk.in
 sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
 diff ask.log got.log
 
@@ -108,7 +108,7 @@ sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
 diff ask.log got.log
 
 nameonly <requirements/optimizers.in >ask.log
-pipreqs bo_benchmark/builtin_opt/ --savepath requirement_chk.in
+pipreqs bayesmark/builtin_opt/ --savepath requirement_chk.in
 sed -f requirements/pipreqs_edits.sed requirement_chk.in | nameonly >got.log
 diff ask.log got.log
 
@@ -177,7 +177,7 @@ do
     python setup.py install
 
     # Run tests
-    pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bo_benchmark --cov-report html
+    pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bayesmark --cov-report html
 
     conda deactivate
 done

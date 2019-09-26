@@ -18,7 +18,7 @@ from hypothesis import given
 from hypothesis.strategies import lists, text, uuids
 from pathvalidate.argparse import validate_filename, validate_filepath
 
-from bo_benchmark.serialize import XRSerializer
+from bayesmark.serialize import XRSerializer
 
 
 def filepaths():

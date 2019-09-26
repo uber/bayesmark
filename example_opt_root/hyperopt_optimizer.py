@@ -3,10 +3,10 @@ from hyperopt import hp, tpe
 from hyperopt.base import JOB_STATE_DONE, JOB_STATE_NEW, STATUS_OK, Domain, Trials
 from scipy.interpolate import interp1d
 
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
-from bo_benchmark.experiment import experiment_main
-from bo_benchmark.np_util import random as np_random
-from bo_benchmark.np_util import random_seed
+from bayesmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.experiment import experiment_main
+from bayesmark.np_util import random as np_random
+from bayesmark.np_util import random_seed
 
 # Sklearn prefers str to unicode:
 DTYPE_MAP = {"real": float, "int": int, "bool": bool, "cat": str, "ordinal": str}

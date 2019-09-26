@@ -19,7 +19,7 @@ import numpy as np
 from hypothesis import given
 from hypothesis.strategies import dictionaries, floats, lists, text, tuples
 
-import bo_benchmark.signatures as ss
+import bayesmark.signatures as ss
 from util import space_configs
 
 N_SIG = ss.N_SUGGESTIONS

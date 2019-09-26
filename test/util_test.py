@@ -17,7 +17,7 @@ import shlex
 from hypothesis import assume, given
 from hypothesis.strategies import floats, integers, iterables, lists, text
 
-from bo_benchmark import util as bobm_util
+from bayesmark import util as bobm_util
 from util import _hashable
 
 

@@ -19,20 +19,20 @@ from hypothesis import assume, given, settings
 from hypothesis.strategies import floats, integers, sampled_from
 from hypothesis_gufunc.gufunc import gufunc_args
 
-import bo_benchmark.experiment as exp
-import bo_benchmark.random_search as rs
-from bo_benchmark import data, np_util
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
-from bo_benchmark.builtin_opt.config import CONFIG
-from bo_benchmark.constants import DATA_LOADER_NAMES, METRICS, MODEL_NAMES
-from bo_benchmark.sklearn_funcs import SklearnModel, TestFunction
+import bayesmark.experiment as exp
+import bayesmark.random_search as rs
+from bayesmark import data, np_util
+from bayesmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.builtin_opt.config import CONFIG
+from bayesmark.constants import DATA_LOADER_NAMES, METRICS, MODEL_NAMES
+from bayesmark.sklearn_funcs import SklearnModel, TestFunction
 from hypothesis_util import seeds
 from util import space_configs
 
 
 class RandomOptimizer(AbstractOptimizer):
     # Unclear what is best package to list for primary_import here.
-    primary_import = "bo_benchmark"
+    primary_import = "bayesmark"
 
     def __init__(self, api_config, random=np_util.random, flaky=False):
         AbstractOptimizer.__init__(self, api_config)

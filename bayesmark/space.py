@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 from scipy.special import expit as logistic  # because nobody calls it expit
 from scipy.special import logit
 
-from bo_benchmark.np_util import clip_chk, snap_to
+from bayesmark.np_util import clip_chk, snap_to
 
 WARPED_DTYPE = np.float_
 N_GRID_DEFAULT = 8

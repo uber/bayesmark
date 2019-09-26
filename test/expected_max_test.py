@@ -14,7 +14,7 @@
 from hypothesis import given
 from hypothesis.strategies import floats, integers, lists
 
-import bo_benchmark.expected_max as em
+import bayesmark.expected_max as em
 
 
 @given(integers(1, 10), integers(1, 10))

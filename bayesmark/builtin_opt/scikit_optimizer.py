@@ -16,7 +16,7 @@ from scipy.interpolate import interp1d
 from skopt import Optimizer as SkOpt
 from skopt.space import Categorical, Integer, Real
 
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.abstract_optimizer import AbstractOptimizer
 
 
 class ScikitOptimizer(AbstractOptimizer):

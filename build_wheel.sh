@@ -11,7 +11,7 @@ git clean -x -f -d
 
 # Get everything in place to put inside the wheel
 SHA_LONG=$(git rev-parse HEAD)
-echo VERSION=\"$SHA_LONG\" >bo_benchmark/version.py
+echo VERSION=\"$SHA_LONG\" >bayesmark/version.py
 
 # Now the actual build
 python3.6 setup.py sdist

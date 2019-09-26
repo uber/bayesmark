@@ -29,9 +29,9 @@ from hypothesis.strategies import (
 )
 from hypothesis_gufunc.extra.xr import fixed_dataarrays, simple_coords, xr_coords
 
-import bo_benchmark.space as sp
-from bo_benchmark.constants import ARG_DELIM, ITER, METHOD, RANDOM_SEARCH, SUGGEST, TEST_CASE, TRIAL
-from bo_benchmark.np_util import linear_rescale
+import bayesmark.space as sp
+from bayesmark.constants import ARG_DELIM, ITER, METHOD, RANDOM_SEARCH, SUGGEST, TEST_CASE, TRIAL
+from bayesmark.np_util import linear_rescale
 
 NULL_PLUG = "\x00"
 

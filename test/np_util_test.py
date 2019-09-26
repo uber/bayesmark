@@ -15,7 +15,7 @@ import numpy as np
 from hypothesis import assume, given
 from hypothesis.strategies import floats, integers, lists
 
-from bo_benchmark import np_util
+from bayesmark import np_util
 from hypothesis_util import broadcast_tester, close_enough, gufunc_floats, seeds
 
 

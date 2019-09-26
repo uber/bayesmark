@@ -2,13 +2,13 @@
 Code Overview
 -------------
 
-.. _bo_benchmark:
+.. _bayesmark:
 
 ~~~~
 Data
 ~~~~
 
-.. automodule:: bo_benchmark.data
+.. automodule:: bayesmark.data
    :members:
    :exclude-members:
 
@@ -16,7 +16,7 @@ Data
 Expected Max Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.expected_max
+.. automodule:: bayesmark.expected_max
    :members:
    :exclude-members:
 
@@ -24,7 +24,7 @@ Expected Max Estimation
 Experiment Aggregation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.experiment_aggregate
+.. automodule:: bayesmark.experiment_aggregate
    :members:
    :exclude-members: main
 
@@ -32,7 +32,7 @@ Experiment Aggregation
 Experiment Analysis
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.experiment_analysis
+.. automodule:: bayesmark.experiment_analysis
    :members:
    :exclude-members: main
 
@@ -40,7 +40,7 @@ Experiment Analysis
 Experiment Baseline
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.experiment_baseline
+.. automodule:: bayesmark.experiment_baseline
    :members:
    :exclude-members: main, do_baseline
 
@@ -48,7 +48,7 @@ Experiment Baseline
 Experiment Launcher
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.experiment_launcher
+.. automodule:: bayesmark.experiment_launcher
    :members:
    :exclude-members: main
 
@@ -56,7 +56,7 @@ Experiment Launcher
 Experiment
 ~~~~~~~~~~
 
-.. automodule:: bo_benchmark.experiment
+.. automodule:: bayesmark.experiment
    :members:
    :exclude-members: experiment_main
 
@@ -64,7 +64,7 @@ Experiment
 Function Signatures
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.signatures
+.. automodule:: bayesmark.signatures
    :members:
    :exclude-members:
 
@@ -72,7 +72,7 @@ Function Signatures
 Numpy Util
 ~~~~~~~~~~
 
-.. automodule:: bo_benchmark.np_util
+.. automodule:: bayesmark.np_util
    :members:
    :exclude-members:
 
@@ -80,7 +80,7 @@ Numpy Util
 Path Util
 ~~~~~~~~~
 
-.. automodule:: bo_benchmark.path_util
+.. automodule:: bayesmark.path_util
    :members:
    :exclude-members:
 
@@ -88,7 +88,7 @@ Path Util
 Quantile Estimation
 ~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.quantiles
+.. automodule:: bayesmark.quantiles
    :members:
    :exclude-members: ensure_shape
 
@@ -96,7 +96,7 @@ Quantile Estimation
 Random Search
 ~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.random_search
+.. automodule:: bayesmark.random_search
    :members:
    :exclude-members:
 
@@ -104,7 +104,7 @@ Random Search
 Serialization
 ~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.serialize
+.. automodule:: bayesmark.serialize
    :members:
    :exclude-members: Serializer
 
@@ -112,7 +112,7 @@ Serialization
 Sklearn Tuning
 ~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.sklearn_funcs
+.. automodule:: bayesmark.sklearn_funcs
    :members:
    :exclude-members:
 
@@ -120,7 +120,7 @@ Sklearn Tuning
 Space
 ~~~~~
 
-.. automodule:: bo_benchmark.space
+.. automodule:: bayesmark.space
    :members:
    :exclude-members: check_array, unravel_index
 
@@ -128,7 +128,7 @@ Space
 Stats
 ~~~~~
 
-.. automodule:: bo_benchmark.stats
+.. automodule:: bayesmark.stats
    :members:
    :exclude-members:
 
@@ -136,7 +136,7 @@ Stats
 Util (General)
 ~~~~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.util
+.. automodule:: bayesmark.util
    :members:
    :exclude-members:
 
@@ -144,6 +144,6 @@ Util (General)
 Xarray Util
 ~~~~~~~~~~~
 
-.. automodule:: bo_benchmark.xr_util
+.. automodule:: bayesmark.xr_util
    :members:
    :exclude-members:

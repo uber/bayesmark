@@ -19,14 +19,14 @@ from collections import Counter
 import numpy as np
 import xarray as xr
 
-import bo_benchmark.constants as cc
-import bo_benchmark.xr_util as xru
-from bo_benchmark.cmd_parse import CmdArgs, agg_parser, parse_args, serializable_dict, unserializable_dict
-from bo_benchmark.constants import ARG_DELIM, EVAL_RESULTS, ITER, METHOD, SUGGEST, TEST_CASE, TIME_RESULTS, TRIAL
-from bo_benchmark.experiment import build_eval_ds, build_timing_ds
-from bo_benchmark.serialize import XRSerializer
-from bo_benchmark.signatures import analyze_signatures
-from bo_benchmark.util import str_join_safe
+import bayesmark.constants as cc
+import bayesmark.xr_util as xru
+from bayesmark.cmd_parse import CmdArgs, agg_parser, parse_args, serializable_dict, unserializable_dict
+from bayesmark.constants import ARG_DELIM, EVAL_RESULTS, ITER, METHOD, SUGGEST, TEST_CASE, TIME_RESULTS, TRIAL
+from bayesmark.experiment import build_eval_ds, build_timing_ds
+from bayesmark.serialize import XRSerializer
+from bayesmark.signatures import analyze_signatures
+from bayesmark.util import str_join_safe
 
 logger = logging.getLogger(__name__)
 

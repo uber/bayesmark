@@ -15,9 +15,9 @@ import numpy as np
 from hypothesis import given, settings
 from hypothesis.strategies import integers
 
-import bo_benchmark.space as sp
-from bo_benchmark.np_util import linear_rescale
-from bo_benchmark.random_search import suggest_dict
+import bayesmark.space as sp
+from bayesmark.np_util import linear_rescale
+from bayesmark.random_search import suggest_dict
 from hypothesis_util import close_enough, gufunc_floats, seeds
 from util import space_configs
 

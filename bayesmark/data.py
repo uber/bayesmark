@@ -19,9 +19,9 @@ import numpy as np
 import pandas as pd  # only needed for csv reader, maybe try something else
 from sklearn import datasets
 
-from bo_benchmark.constants import DATA_LOADER_NAMES, SCORERS_CLF, SCORERS_REG
-from bo_benchmark.path_util import join_safe_r
-from bo_benchmark.stats import robust_standardize
+from bayesmark.constants import DATA_LOADER_NAMES, SCORERS_CLF, SCORERS_REG
+from bayesmark.path_util import join_safe_r
+from bayesmark.stats import robust_standardize
 
 
 class ProblemType(IntEnum):
@@ -147,7 +147,7 @@ def load_data(dataset_name, data_root=None):  # pragma: io
         The feature matrix of the data set. It will be `float` array.
     target : :class:`numpy:numpy.ndarray` of shape (n,)
         The target vector for the problem, which is `int` for classification and `float` for regression.
-    problem_type : :class:`bo_benchmark.data.ProblemType`
+    problem_type : :class:`bayesmark.data.ProblemType`
         `Enum` to indicate if regression of classification data set.
     """
     if dataset_name in DATA_LOADERS:

@@ -59,8 +59,8 @@ from opentuner.search.manipulator import (
     ScaledNumericParameter,
 )
 
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
-from bo_benchmark.np_util import clip_chk
+from bayesmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.np_util import clip_chk
 
 DEFAULT_TECHNIQUES = ("AUCBanditMetaTechniqueA",)
 MEMORY_ONLY_DB = "sqlite://"

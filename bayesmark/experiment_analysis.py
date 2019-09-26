@@ -19,11 +19,11 @@ import warnings
 import numpy as np
 import xarray as xr
 
-import bo_benchmark.constants as cc
-import bo_benchmark.quantiles as qt
-import bo_benchmark.xr_util as xru
-from bo_benchmark.cmd_parse import CmdArgs, general_parser, parse_args, serializable_dict
-from bo_benchmark.constants import (
+import bayesmark.constants as cc
+import bayesmark.quantiles as qt
+import bayesmark.xr_util as xru
+from bayesmark.cmd_parse import CmdArgs, general_parser, parse_args, serializable_dict
+from bayesmark.constants import (
     ITER,
     LB_MEAN,
     LB_MED,
@@ -42,12 +42,12 @@ from bo_benchmark.constants import (
     UB_MED,
     UB_NORMED_MEAN,
 )
-from bo_benchmark.experiment_aggregate import validate_agg_perf
-from bo_benchmark.experiment_baseline import do_baseline
-from bo_benchmark.np_util import linear_rescale
-from bo_benchmark.serialize import XRSerializer
-from bo_benchmark.signatures import analyze_signature_pair
-from bo_benchmark.stats import t_EB
+from bayesmark.experiment_aggregate import validate_agg_perf
+from bayesmark.experiment_baseline import do_baseline
+from bayesmark.np_util import linear_rescale
+from bayesmark.serialize import XRSerializer
+from bayesmark.signatures import analyze_signature_pair
+from bayesmark.stats import t_EB
 
 # Mathematical settings
 EVAL_Q = 0.5  # Evaluate based on median loss across n_trials

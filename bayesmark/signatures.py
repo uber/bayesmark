@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-import bo_benchmark.random_search as rs
+import bayesmark.random_search as rs
 
 # How many points to probe the function to get the signature
 N_SUGGESTIONS = 5

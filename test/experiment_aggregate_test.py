@@ -25,9 +25,9 @@ from hypothesis_gufunc.extra.xr import (
     xr_dims,
 )
 
-import bo_benchmark.experiment_aggregate as agg
-from bo_benchmark.constants import EVAL_PHASE, ITER, METHOD, OBS_PHASE, SUGGEST, SUGGEST_PHASE, TEST_CASE, TRIAL
-from bo_benchmark.signatures import N_SUGGESTIONS
+import bayesmark.experiment_aggregate as agg
+from bayesmark.constants import EVAL_PHASE, ITER, METHOD, OBS_PHASE, SUGGEST, SUGGEST_PHASE, TEST_CASE, TRIAL
+from bayesmark.signatures import N_SUGGESTIONS
 
 N_SIG = N_SUGGESTIONS
 SIG_POINT = "sig_point"

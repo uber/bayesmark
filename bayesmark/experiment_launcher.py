@@ -22,22 +22,22 @@ from subprocess import call
 
 import numpy as np
 
-import bo_benchmark.cmd_parse as cmd
-from bo_benchmark.builtin_opt.config import CONFIG
-from bo_benchmark.cmd_parse import CMD_STR, CmdArgs, serializable_dict
-from bo_benchmark.constants import ARG_DELIM, DATA_LOADER_NAMES, EXP_VARS, METRICS, MODEL_NAMES, PY_INTERPRETER
-from bo_benchmark.data import METRICS_LOOKUP, get_problem_type
-from bo_benchmark.np_util import random as np_random
-from bo_benchmark.np_util import random_seed, strat_split
-from bo_benchmark.path_util import absopen
-from bo_benchmark.serialize import XRSerializer
-from bo_benchmark.util import range_str, shell_join, str_join_safe, strict_sorted
+import bayesmark.cmd_parse as cmd
+from bayesmark.builtin_opt.config import CONFIG
+from bayesmark.cmd_parse import CMD_STR, CmdArgs, serializable_dict
+from bayesmark.constants import ARG_DELIM, DATA_LOADER_NAMES, EXP_VARS, METRICS, MODEL_NAMES, PY_INTERPRETER
+from bayesmark.data import METRICS_LOOKUP, get_problem_type
+from bayesmark.np_util import random as np_random
+from bayesmark.np_util import random_seed, strat_split
+from bayesmark.path_util import absopen
+from bayesmark.serialize import XRSerializer
+from bayesmark.util import range_str, shell_join, str_join_safe, strict_sorted
 
 # How much of uuid to put in job name to avoid name clashes
 UUID_JOB_CHARS = 7
 # Warning: this name is also specified in setup.py, and violates the DRY principle. So if it gets changed in setup.py,
 # it must also be changed here!
-EXPERIMENT_ENTRY = "bob-exp"
+EXPERIMENT_ENTRY = "bayesmark-exp"
 
 logger = logging.getLogger(__name__)
 

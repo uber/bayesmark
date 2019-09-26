@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import bo_benchmark.random_search as rs
-from bo_benchmark import np_util
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
+import bayesmark.random_search as rs
+from bayesmark import np_util
+from bayesmark.abstract_optimizer import AbstractOptimizer
 
 
 class RandomOptimizer(AbstractOptimizer):
     # Unclear what is best package to list for primary_import here.
-    primary_import = "bo_benchmark"
+    primary_import = "bayesmark"
 
     def __init__(self, api_config, random=np_util.random):
         """Build wrapper class to use random search function in benchmark.

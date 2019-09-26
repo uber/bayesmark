@@ -31,11 +31,11 @@ from hypothesis.strategies import (
 )
 from pathvalidate.argparse import validate_filename, validate_filepath
 
-from bo_benchmark import data
-from bo_benchmark import experiment_launcher as launcher
-from bo_benchmark.builtin_opt.config import CONFIG
-from bo_benchmark.cmd_parse import CmdArgs
-from bo_benchmark.constants import ARG_DELIM, METRICS, MODEL_NAMES
+from bayesmark import data
+from bayesmark import experiment_launcher as launcher
+from bayesmark.builtin_opt.config import CONFIG
+from bayesmark.cmd_parse import CmdArgs
+from bayesmark.constants import ARG_DELIM, METRICS, MODEL_NAMES
 from hypothesis_util import seeds
 
 DATA_NAMES = sorted(data.DATA_LOADERS.keys())

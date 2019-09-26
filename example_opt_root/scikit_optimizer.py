@@ -3,8 +3,8 @@ from scipy.interpolate import interp1d
 from skopt import Optimizer as SkOpt
 from skopt.space import Categorical, Integer, Real
 
-from bo_benchmark.abstract_optimizer import AbstractOptimizer
-from bo_benchmark.experiment import experiment_main
+from bayesmark.abstract_optimizer import AbstractOptimizer
+from bayesmark.experiment import experiment_main
 
 
 class ScikitOptimizer(AbstractOptimizer):
