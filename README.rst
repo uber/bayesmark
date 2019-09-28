@@ -295,7 +295,7 @@ It is also possible to convert the notebooks to an HTML report at the command li
 
    jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
 
-The output file will be in ``./notebooks/plot_mean_score.html``. See the ``nbconvert`` `documentation <https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats>`_ for more output formats. By default, the notebooks look in ``./notebooks/bo_example_folder/`` for the ``summary.json`` from ``bayesmark-anal``.
+The output file will be in ``./notebooks/plot_mean_score.html``. See the ``nbconvert`` `documentation page <https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats>`_ for more output formats. By default, the notebooks look in ``./notebooks/bo_example_folder/`` for the ``summary.json`` from ``bayesmark-anal``.
 
 To run ``plot_test_case.ipynb`` use the command:
 
@@ -562,6 +562,12 @@ The wheel (tar ball) for deployment as a pip installable package can be built us
 
 Links
 =====
+
+The `source <https://github.com/uber/bayesmark>`_ is hosted on GitHub.
+
+The `documentation <https://bayesmark.readthedocs.io/en/latest/>`_ is hosted at Read the Docs.
+
+Installable from `PyPI <https://pypi.org/project/bayesmark/>`_.
 
 The builtin optimizers are wrappers on the following projects:
 

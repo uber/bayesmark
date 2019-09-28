@@ -6,6 +6,7 @@
 !.pre-commit-config.yaml
 !.secrets.baseline
 !.travis.yml
+!.readthedocs.yml
 
 # For wheels
 bayesmark/version.py

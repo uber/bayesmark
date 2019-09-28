@@ -15,6 +15,10 @@ from setuptools import find_packages, setup
 
 CMD_NAME = "bayesmark"
 
+# Strings to remove from README to make it PyPI friendly. See:
+# https://packaging.python.org/guides/making-a-pypi-friendly-readme/#validating-restructuredtext-markup
+REMOVE_FROM_RST = (":func:", ":ref:")
+
 # Derive install requires from base.in first order requirements
 with open("requirements/base.in") as f:
     requirements = f.read().strip()
@@ -32,6 +36,9 @@ ipynb_requirements = [pp for pp in ipynb_requirements if pp[0].isalnum()]
 
 with open("README.rst") as f:
     long_description = f.read()
+# Probably more efficient way to do this with regex but good enough
+for remove_word in REMOVE_FROM_RST:
+    long_description = long_description.replace(remove_word, "")
 
 setup(
     name="bayesmark",
