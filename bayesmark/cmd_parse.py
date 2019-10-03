@@ -32,8 +32,6 @@ from bayesmark.constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAM
 from bayesmark.path_util import absopen, abspath
 from bayesmark.util import shell_join
 
-DEFAULT_REV_FILE = "version.log"
-
 assert not any(ARG_DELIM in opt for opt in MODEL_NAMES)
 assert not any(ARG_DELIM in opt for opt in DATA_LOADER_NAMES)
 
@@ -178,7 +176,7 @@ def load_rev_number():
 
     # Check coherence of what we found
     if (rev_repo is None) and (rev_file is None):
-        raise RuntimeError("Must specify %s if not inside a git repo." % DEFAULT_REV_FILE)
+        raise RuntimeError("Must specify version.py if not inside a git repo.")
     if (rev_repo is not None) and (rev_file is not None):
         assert rev_repo == rev_file, "Rev file %s does not match rev git %s" % (rev_file, rev_repo)
 
