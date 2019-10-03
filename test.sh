@@ -177,7 +177,7 @@ do
     python setup.py install
 
     # Run tests
-    pytest test/util_test.py -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bayesmark --cov-report html
+    pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings --cov=bayesmark --cov-report html
 
     conda deactivate
 done

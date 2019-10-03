@@ -73,7 +73,7 @@ source ./env/bin/activate
 pip install -r $REPO_DIR/requirements/test.txt
 pip install $REPO_DIR/dist/*.tar.gz
 cp -r $REPO_DIR/test .
-pytest test/util_test.py -s -v --hypothesis-seed=0 --disable-pytest-warnings
+pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings
 deactivate
 cd $REPO_DIR
 # Cleanup since we will build again
@@ -119,7 +119,7 @@ source ./env/bin/activate
 pip install -r $REPO_DIR/requirements/test.txt
 pip install $REPO_DIR/dist/*.tar.gz
 cp -r $REPO_DIR/test .
-pytest test/util_test.py -s -v --hypothesis-seed=0 --disable-pytest-warnings
+pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings
 deactivate
 cd $REPO_DIR
 
@@ -147,7 +147,7 @@ cp -r $REPO_DIR/notebooks .
 cp -r $REPO_DIR/example_opt_root .
 ./integration_test.sh
 cp -r $REPO_DIR/test .
-pytest test/util_test.py -s -v --hypothesis-seed=0 --disable-pytest-warnings
+pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings
 deactivate
 cd $REPO_DIR
 
@@ -190,7 +190,7 @@ cp -r $REPO_DIR/notebooks .
 cp -r $REPO_DIR/example_opt_root .
 ./integration_test.sh
 cp -r $REPO_DIR/test .
-pytest test/util_test.py -s -v --hypothesis-seed=0 --disable-pytest-warnings
+pytest test/ -s -v --hypothesis-seed=0 --disable-pytest-warnings
 deactivate
 cd $REPO_DIR
 

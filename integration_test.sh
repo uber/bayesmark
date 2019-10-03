@@ -12,7 +12,7 @@ which bayesmark-anal
 DB_ROOT=./notebooks
 DBID=bo_example_folder
 
-bayesmark-launch -n 15 -r 1 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT -c SVM DT -d boston breast -v
+bayesmark-launch -n 15 -r 2 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT -c SVM DT -d boston breast -v
 bayesmark-agg -dir $DB_ROOT -b $DBID
 bayesmark-anal -dir $DB_ROOT -b $DBID -v
 
@@ -33,4 +33,4 @@ bayesmark-anal -dir $DB_ROOT -b $DBID -v
 jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
 
 # Try dry run
-bayesmark-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT-New -c SVM DT --opt-root ./example_opt_root -nj 50 -v
+bayesmark-launch -n 15 -r 2 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT-New -c SVM DT --opt-root ./example_opt_root -nj 50 -v
