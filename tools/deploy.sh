@@ -161,7 +161,7 @@ sha256sum dist/*
 # See if tests pass remote, TODO use travis CLI
 read -t 1 -n 10000 discard || true
 read -p "Travis tests pass, and push to PyPI? This cannot be undone. [push/no]" -r
-if [[ ! $REPLY =~ ^[push]$ ]]
+if [[ ! $REPLY == push ]]
 then
     exit 1
 fi

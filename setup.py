@@ -42,7 +42,7 @@ for remove_word in REMOVE_FROM_RST:
 
 setup(
     name="bayesmark",
-    version="0.0.4rc5",
+    version="0.0.4rc6",
     packages=find_packages(),
     url="https://github.com/uber/bayesmark/",
     author="Ryan Turner",
