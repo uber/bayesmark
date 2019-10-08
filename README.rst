@@ -35,7 +35,10 @@ Building an environment to run the included notebooks can be done with:
 
 Or, ``bayesmark[optimizers,notebooks]`` can be used.
 
-A quick example of running the benchmark is `here <#example>`_.
+A quick example of running the benchmark is `here <#example>`_. The instructions are used to generate results as below:
+
+.. image:: https://user-images.githubusercontent.com/28273671/66338456-02516b80-e8f6-11e9-8156-2e84e04cf6fe.png
+    :width: 95 %
 
 Non-pip dependencies
 --------------------
@@ -295,7 +298,7 @@ It is also possible to convert the notebooks to an HTML report at the command li
 
    jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
 
-The output file will be in ``./notebooks/plot_mean_score.html``. See the ``nbconvert`` `documentation page <https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats>`_ for more output formats. By default, the notebooks look in ``./notebooks/bo_example_folder/`` for the ``summary.json`` from ``bayesmark-anal``.
+The output file will be in ``./notebooks/plot_mean_score.html``. Here is an example `export <https://github.com/uber/bayesmark/files/3699241/plot_mean_score.pdf>`_. See the ``nbconvert`` `documentation page <https://nbconvert.readthedocs.io/en/latest/usage.html#supported-output-formats>`_ for more output formats. By default, the notebooks look in ``./notebooks/bo_example_folder/`` for the ``summary.json`` from ``bayesmark-anal``.
 
 To run ``plot_test_case.ipynb`` use the command:
 
