@@ -305,7 +305,7 @@ By default uses cartesian produce of data x model x metric x optimizer x repeate
 
 # Output
 
-![Scores](https://user-images.githubusercontent.com/28273671/66338456-02516b80-e8f6-11e9-8156-2e84e04cf6fe.png.pdf){ width=95% }
+![Scores](https://user-images.githubusercontent.com/28273671/66338456-02516b80-e8f6-11e9-8156-2e84e04cf6fe.png){ width=95% }
 
 # Randoms search baseline
 
