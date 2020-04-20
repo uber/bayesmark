@@ -19,20 +19,18 @@ CMD_NAME = "bayesmark"
 # https://packaging.python.org/guides/making-a-pypi-friendly-readme/#validating-restructuredtext-markup
 REMOVE_FROM_RST = (":func:", ":ref:")
 
+
+def read_requirements(name):
+    with open("requirements/" + name + ".in") as f:
+        requirements = f.read().strip()
+    requirements = requirements.replace("==", "~=").splitlines()  # Loosen strict pins
+    return [pp for pp in requirements if pp[0].isalnum()]
+
+
 # Derive install requires from base.in first order requirements
-with open("requirements/base.in") as f:
-    requirements = f.read().strip()
-requirements = requirements.replace("==", ">=").split()  # Convert to non-pinned for setup.py
-
-with open("requirements/optimizers.in") as f:
-    opt_requirements = f.read().strip()
-opt_requirements = opt_requirements.replace("==", ">=").splitlines()  # Convert to non-pinned for setup.py
-opt_requirements = [pp for pp in opt_requirements if pp[0].isalnum()]
-
-with open("requirements/ipynb.in") as f:
-    ipynb_requirements = f.read().strip()
-ipynb_requirements = ipynb_requirements.replace("==", ">=").splitlines()  # Convert to non-pinned for setup.py
-ipynb_requirements = [pp for pp in ipynb_requirements if pp[0].isalnum()]
+requirements = read_requirements("base")
+opt_requirements = read_requirements("optimizers")
+ipynb_requirements = read_requirements("ipynb")
 
 with open("README.rst") as f:
     long_description = f.read()
