@@ -23,7 +23,7 @@ jinja2==2.10.1            # via nbconvert, notebook
 jsonschema==3.0.2         # via nbformat
 jupyter-client==5.3.1     # via ipykernel, jupyter-console, notebook, qtconsole
 jupyter-console==6.0.0    # via jupyter
-jupyter-core==4.5.0
+jupyter-core==4.6.0
 jupyter==1.0.0
 kiwisolver==1.1.0         # via matplotlib
 markupsafe==1.1.1         # via jinja2

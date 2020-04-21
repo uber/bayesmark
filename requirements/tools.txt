@@ -31,7 +31,7 @@ jedi==0.14.1              # via ipython
 jinja2==2.10.1            # via nbconvert
 jsonschema==3.0.2         # via nbformat
 jupyter-client==5.3.1     # via ipykernel
-jupyter-core==4.5.0       # via jupyter-client, nbconvert, nbformat
+jupyter-core==4.6.0       # via jupyter-client, nbconvert, nbformat
 markupsafe==1.1.1         # via jinja2
 mistune==0.8.4            # via nbconvert
 more-itertools==7.2.0     # via pytest
@@ -44,7 +44,7 @@ parso==0.5.1              # via jedi
 pexpect==4.7.0            # via ipython
 pickleshare==0.7.5        # via ipython
 pip-compile-multi==1.4.0
-pip-tools==4.0.0          # via pip-compile-multi
+pip-tools==5.0.0          # via pip-compile-multi
 pipreqs==0.4.9
 pluggy==0.12.0            # via pytest
 pre-commit==1.15.2
