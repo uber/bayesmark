@@ -374,14 +374,14 @@ class XRSerializer(Serializer):
         return key
 
     def _validate(db_root, keys=(), db=None):
-        validate_filepath(db_root)
+        validate_filepath(db_root, platform="auto")
         assert os.path.isabs(db_root), "db_root must be absolute path"
 
         if db is not None:
-            validate_filename(db)
+            validate_filename(db, platform="universal")
 
         for kk in keys:
-            validate_filename(kk)
+            validate_filename(kk, platform="universal")
 
 
 def _dump_xr(f, ds, meta):  # pragma: io

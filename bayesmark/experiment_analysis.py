@@ -13,8 +13,10 @@
 # limitations under the License.
 """Perform analysis to compare different optimizers across problems.
 """
+import json
 import logging
 import warnings
+from collections import OrderedDict
 
 import numpy as np
 import xarray as xr
@@ -31,6 +33,7 @@ from bayesmark.constants import (
     METHOD,
     NORMED_MEAN,
     NORMED_MED,
+    OBJECTIVE,
     PERF_BEST,
     PERF_CLIP,
     PERF_MEAN,
@@ -56,20 +59,80 @@ ALPHA = 0.05  # ==> 95% CIs
 logger = logging.getLogger(__name__)
 
 
-def compute_aggregates(perf_da, baseline_ds):
+def cummin(x_val, x_key):
+    """Get the cumulative minimum of `x_val` when ranked according to `x_key`.
+
+    Parameters
+    ----------
+    x_val : :class:`numpy:numpy.ndarray` of shape (n, d)
+        The array to get the cumulative minimum of along axis 0.
+    x_key : :class:`numpy:numpy.ndarray` of shape (n, d)
+        The array for ranking elements as to what is the minimum.
+
+    Returns
+    -------
+    c_min : :class:`numpy:numpy.ndarray` of shape (n, d)
+        The cumulative minimum array.
+    """
+    assert x_val.shape == x_key.shape
+    assert x_val.ndim == 2
+    n, _ = x_val.shape
+
+    xm = np.minimum.accumulate(x_key, axis=0)
+    idx = np.maximum.accumulate((x_key <= xm) * np.arange(n)[:, None])
+    c_min = np.take_along_axis(x_val, idx, axis=0)
+    return c_min
+
+
+def get_perf_array(evals, evals_visible):
+    """Get the actual (e.g., generalization loss) over iterations.
+
+    Parameters
+    ----------
+    evals : :class:`numpy:numpy.ndarray` of shape (n_iter, n_batch, n_trials)
+        The actual loss (e.g., generalization) for a given experiment.
+    evals_visible : :class:`numpy:numpy.ndarray` of shape (n_iter, n_batch, n_trials)
+        The observable loss (e.g., validation) for a given experiment.
+
+    Returns
+    -------
+    perf_array : :class:`numpy:numpy.ndarray` of shape (n_iter, n_trials)
+        The best performance so far at iteration i from `evals`. Where the best has been selected according to
+        `evals_visible`.
+    """
+    n_iter, _, n_trials = evals.shape
+
+    idx = np.argmin(evals_visible, axis=1)
+    perf_array = np.take_along_axis(evals, idx[:, None, :], axis=1).squeeze(axis=1)
+    assert perf_array.shape == (n_iter, n_trials)
+
+    visible_perf_array = np.min(evals_visible, axis=1)
+    assert visible_perf_array.shape == (n_iter, n_trials)
+
+    # Get the minimum from the visible loss
+    perf_array = cummin(perf_array, visible_perf_array)
+    return perf_array
+
+
+def compute_aggregates(perf_da, baseline_ds, visible_perf_da=None):
     """Aggregate function evaluations in the experiments to get performance summaries of each method.
 
     Parameters
     ----------
     perf_da : :class:`xarray:xarray.DataArray`
-        Aggregate experimental results with each function evaluation in the experiments. `all_perf` has dimensions
-        ``(ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)`` as is assumed to have no nan values.
+        Aggregate experimental results with each function evaluation in the experiments according to true loss
+        (e.g., generalization). `perf_da` has dimensions ``(ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)`` as is assumed
+        to have no nan values.
     baseline_ds : :class:`xarray:xarray.Dataset`
         Dataset with baseline performance. It was variables ``(PERF_MED, PERF_MEAN, PERF_CLIP, PERF_BEST)`` with
         dimensions ``(ITER, TEST_CASE)``, ``(ITER, TEST_CASE)``, ``(TEST_CASE,)``, and ``(TEST_CASE,)``, respectively.
         `PERF_MED` is a baseline of performance based on random search when using medians to summarize performance.
         Likewise, `PERF_MEAN` is for means. `PERF_CLIP` is an upperbound to clip poor performance when using the mean.
         `PERF_BEST` is an estimate on the global minimum.
+    visible_perf_da : :class:`xarray:xarray.DataArray`
+        Aggregate experimental results with each function evaluation in the experiments according to visible loss
+        (e.g., validation). `visible_perf_da` has dimensions ``(ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)`` as is
+        assumed to have no nan values. If `None`, we set ``visible_perf_da = perf_da``.
 
     Returns
     -------
@@ -120,11 +183,20 @@ def compute_aggregates(perf_da, baseline_ds):
         )
         for method_name in perf_da.coords[METHOD].values:
             # Take the minimum over all suggestion at given iter + sanity check perf_da
-            curr_da = perf_da.sel({METHOD: method_name, TEST_CASE: func_name}, drop=True).min(dim=SUGGEST)
-            assert curr_da.dims == (ITER, TRIAL)
+            curr_da = perf_da.sel({METHOD: method_name, TEST_CASE: func_name}, drop=True)
+            assert curr_da.dims == (ITER, SUGGEST, TRIAL)
 
-            # Want to evaluate minimum so far during optimization
-            perf_array = np.minimum.accumulate(curr_da.values, axis=0)
+            if visible_perf_da is None:
+                perf_array = get_perf_array(curr_da.values, curr_da.values)
+
+                curr_da_ = perf_da.sel({METHOD: method_name, TEST_CASE: func_name}, drop=True).min(dim=SUGGEST)
+                assert curr_da_.dims == (ITER, TRIAL)
+                perf_array_ = np.minimum.accumulate(curr_da_.values, axis=0)
+                assert np.allclose(perf_array, perf_array_)
+            else:
+                curr_visible_da = visible_perf_da.sel({METHOD: method_name, TEST_CASE: func_name}, drop=True)
+                assert curr_visible_da.dims == (ITER, SUGGEST, TRIAL)
+                perf_array = get_perf_array(curr_da.values, curr_visible_da.values)
 
             # Compute median perf and CI on it
             med_perf, LB, UB = qt.quantile_and_CI(perf_array, EVAL_Q, alpha=ALPHA)
@@ -137,6 +209,13 @@ def compute_aggregates(perf_da, baseline_ds):
             normed = linear_rescale(med_perf, best_opt, rand_perf_med, 0.0, 1.0, enforce_bounds=False)
             agg_result[NORMED_MED].loc[{TEST_CASE: func_name, METHOD: method_name}] = normed
 
+            # Store normed mean version
+            normed = linear_rescale(perf_array, best_opt, base_clip_val, 0.0, 1.0, enforce_bounds=False)
+            # Also, clip the score from below at -1 to limit max influence of single run on final average
+            normed = np.clip(normed, -1.0, 1.0)
+            normed = np.mean(normed, axis=1)
+            agg_result[NORMED_MEAN].loc[{TEST_CASE: func_name, METHOD: method_name}] = normed
+
             # Compute mean perf and CI on it
             perf_array = np.minimum(base_clip_val, perf_array)
             mean_perf = np.mean(perf_array, axis=1)
@@ -146,10 +225,6 @@ def compute_aggregates(perf_da, baseline_ds):
             agg_result[PERF_MEAN].loc[{TEST_CASE: func_name, METHOD: method_name}] = mean_perf
             agg_result[LB_MEAN].loc[{TEST_CASE: func_name, METHOD: method_name}] = mean_perf - EB
             agg_result[UB_MEAN].loc[{TEST_CASE: func_name, METHOD: method_name}] = mean_perf + EB
-
-            # Now store normed version, which is better for aggregation
-            normed = linear_rescale(mean_perf, best_opt, base_clip_val, 0.0, 1.0, enforce_bounds=False)
-            agg_result[NORMED_MEAN].loc[{TEST_CASE: func_name, METHOD: method_name}] = normed
     assert not any(np.any(np.isnan(agg_result[kk].values)) for kk in agg_result)
 
     # Compute summary score over all test cases, summarize performance of each method
@@ -186,13 +261,15 @@ def main():
     description = "Analyze results from aggregated studies"
     args = parse_args(general_parser(description))
 
+    # Metric used on leaderboard
+    leaderboard_metric = cc.VISIBLE_TO_OPT
+
     logger.setLevel(logging.INFO)  # Note this is the module-wide logger
     if args[CmdArgs.verbose]:
         logger.addHandler(logging.StreamHandler())
 
     # Load in the eval data and sanity check
-    perf_da, meta = XRSerializer.load_derived(args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.EVAL_RESULTS)
-    perf_da = xru.only_dataarray(perf_da)
+    perf_ds, meta = XRSerializer.load_derived(args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.EVAL_RESULTS)
     logger.info("Meta data from source file: %s" % str(meta["args"]))
 
     # Check if there is baselines file, other make one
@@ -207,16 +284,50 @@ def main():
     # Check test case signatures match between eval data and baseline data
     sig_errs, signatures = analyze_signature_pair(meta["signature"], meta_ref["signature"])
     logger.info("Signature errors:\n%s" % sig_errs.to_string())
+    print(json.dumps({"exp-anal sig errors": sig_errs.T.to_dict()}))
+
+    # Subset baseline to only the test cases run in the experiments
+    test_cases_run = perf_ds.coords[TEST_CASE].values.tolist()
+    assert set(test_cases_run) <= set(
+        baseline_ds.coords[TEST_CASE].values.tolist()
+    ), "Data set contains test cases not found in baseline."
+    baseline_ds = baseline_ds.sel({TEST_CASE: test_cases_run})
 
     # Do the actual computation
-    agg_result, summary = compute_aggregates(perf_da, baseline_ds)
+    perf_visible = perf_ds[cc.VISIBLE_TO_OPT]
+    agg_result = OrderedDict()
+    summary = OrderedDict()
+    for metric_for_scoring in sorted(perf_ds):
+        perf_da = perf_ds[metric_for_scoring]
+        baseline_ds_ = baseline_ds.sel({OBJECTIVE: metric_for_scoring}, drop=True)
+        agg_result[(metric_for_scoring,)], summary[(metric_for_scoring,)] = compute_aggregates(
+            perf_da, baseline_ds_, perf_visible
+        )
+    agg_result = xru.ds_concat(agg_result, dims=(cc.OBJECTIVE,))
+    summary = xru.ds_concat(summary, dims=(cc.OBJECTIVE,))
 
-    final_score = summary[PERF_MED][{ITER: -1}]
-    logger.info("median score @ %d:\n%s" % (summary.sizes[ITER], xru.da_to_string(final_score)))
-    final_score = summary[PERF_MEAN][{ITER: -1}]
-    logger.info("mean score @ %d:\n%s" % (summary.sizes[ITER], xru.da_to_string(final_score)))
-    final_score = summary[NORMED_MEAN][{ITER: -1}]
-    logger.info("normed mean score @ %d:\n%s" % (summary.sizes[ITER], xru.da_to_string(final_score)))
+    for metric_for_scoring in sorted(perf_ds):
+        # Print summary by problem
+        # Recall that:
+        # ... summary[PERF_MEAN] = agg_result[NORMED_MEAN].mean(dim=TEST_CASE)
+        # ... summary[NORMED_MEAN] = summary[PERF_MEAN] / normalizer
+        # Where normalizer is constant across all problems, optimizers
+        print("Scores by problem (JSON):\n")
+        agg_df = agg_result[NORMED_MEAN].sel({cc.OBJECTIVE: metric_for_scoring}, drop=True)[{ITER: -1}].to_pandas().T
+        print(json.dumps({metric_for_scoring: agg_df.to_dict()}))
+        print("\n")
+
+        final_score = summary[PERF_MED].sel({cc.OBJECTIVE: metric_for_scoring}, drop=True)[{ITER: -1}]
+        logger.info("median score @ %d:\n%s" % (summary.sizes[ITER], xru.da_to_string(final_score)))
+        final_score = summary[PERF_MEAN].sel({cc.OBJECTIVE: metric_for_scoring}, drop=True)[{ITER: -1}]
+        logger.info("mean score @ %d:\n%s" % (summary.sizes[ITER], xru.da_to_string(final_score)))
+
+        print("Final scores (JSON):\n")
+        print(json.dumps({metric_for_scoring: final_score.to_series().to_dict()}))
+        print("\n")
+
+        final_score = summary[NORMED_MEAN].sel({cc.OBJECTIVE: metric_for_scoring}, drop=True)[{ITER: -1}]
+        logger.info("normed mean score @ %d:\n%s" % (summary.sizes[ITER], xru.da_to_string(final_score)))
 
     # Now saving results
     meta = {"args": serializable_dict(args), "signature": signatures}
@@ -224,7 +335,11 @@ def main():
 
     XRSerializer.save_derived(summary, meta, args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.MEAN_SCORE)
 
-    logger.info("done")
+    final_msg = xru.da_to_string(
+        100 * (1.0 - summary[PERF_MEAN].sel({cc.OBJECTIVE: leaderboard_metric}, drop=True)[{ITER: -1}])
+    )
+    logger.info("-" * 20)
+    logger.info("Final score `100 x (1-loss)` for leaderboard:\n%s" % final_msg)
 
 
 if __name__ == "__main__":

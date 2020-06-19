@@ -27,10 +27,13 @@ cp -r ./notebooks install_test
 cp -r ./example_opt_root install_test
 
 cd install_test
-virtualenv bobm_ipynb --python=python3.6
+virtualenv bobm_ipynb --python=python3
 source ./bobm_ipynb/bin/activate
 python --version
 pip freeze | sort
+
+# Remove this if we want to make sure everything is compatible with latest
+pip install -r ../requirements/optimizers.txt
 
 pip install ../dist/bayesmark.tar.gz[optimizers,notebooks]
 ../integration_test.sh

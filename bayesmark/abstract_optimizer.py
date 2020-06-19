@@ -44,10 +44,9 @@ class AbstractOptimizer(ABC):
         version_str : str
             Version number of the optimizer. Usually, this is equivalent to ``package.__version__``.
         """
-        assert isinstance(
-            cls.primary_import, str
-        ), "Static str variable primary_import must be specified in optimization wrapper."
-        version_str = version(cls.primary_import)
+        assert (cls.primary_import is None) or isinstance(cls.primary_import, str)
+        # Should use x.x.x as version if sub-class did not specify its primary import
+        version_str = "x.x.x" if cls.primary_import is None else version(cls.primary_import)
         return version_str
 
     @abstractmethod

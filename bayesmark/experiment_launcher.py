@@ -13,6 +13,7 @@
 # limitations under the License.
 """Launch studies in separate studies or do dry run to build jobs file with lists of commands to run.
 """
+import json
 import logging
 import random as pyrandom
 import uuid as pyuuid
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 def _is_arg_safe(ss):
-    """Check if str is safe as argument to argparse."""
+    """Check if `str` is safe as argument to `argparse`."""
     if len(ss) == 0:
         return False
     safe = ss[0] != "-"
@@ -51,6 +52,7 @@ def _is_arg_safe(ss):
 
 
 def arg_safe_str(val):
+    """Cast value as `str`, raise error if not safe as argument to `argparse`."""
     ss = str(val)
     if not _is_arg_safe(ss):
         raise ValueError("%s is not safe for argparse" % ss)
@@ -219,15 +221,14 @@ def real_run(args, opt_file_lookup, run_uuid):  # pragma: io
     logger.info("Supply --db %s to append to this experiment or reproduce jobs file." % args[CmdArgs.db])
 
     # Get and run the commands in a sub-process
-    ran, failed = 0, 0
+    counter = 0
     G = gen_commands(args, opt_file_lookup, run_uuid)
     for _, full_cmd in G:
         status = call(full_cmd, shell=False, cwd=args[CmdArgs.optimizer_root])
-        ran += 1
         if status != 0:
-            failed += 1
-            warnings.warn("status code %d returned from:\n%s" % (status, " ".join(full_cmd)), RuntimeWarning)
-    logger.info("%d failures of benchmark script after %d studies." % (failed, ran))
+            raise ChildProcessError("status code %d returned from:\n%s" % (status, " ".join(full_cmd)))
+        counter += 1
+    logger.info(f"Benchmark script ran {counter} studies successfully.")
 
 
 def main():
@@ -246,15 +247,20 @@ def main():
 
     # Setup uuid
     if args[CmdArgs.uuid] is None:
-        run_uuid = pyuuid.uuid4()  # debatable if uuid1 or uuid4 is better here
+        args[CmdArgs.uuid] = pyuuid.uuid4().hex  # debatable if uuid1 or uuid4 is better here
     else:
-        run_uuid = pyuuid.UUID(hex=args[CmdArgs.uuid])
-        assert run_uuid.hex == args[CmdArgs.uuid]
         warnings.warn(
             "User UUID supplied. This is only desired for debugging. Careless use could lead to study id conflicts.",
             UserWarning,
         )
+    run_uuid = pyuuid.UUID(hex=args[CmdArgs.uuid])
+    assert run_uuid.hex == args[CmdArgs.uuid]
     logger.info("Supply --uuid %s to reproduce this run." % run_uuid.hex)
+
+    # Log all the options
+    print("Launcher options (JSON):\n")
+    print(json.dumps({"bayesmark-launch-args": cmd.serializable_dict(args)}))
+    print("\n")
 
     # Set the master seed (derive from the uuid we just setup)
     pyrandom.seed(run_uuid.int)

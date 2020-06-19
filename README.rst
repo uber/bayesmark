@@ -391,6 +391,8 @@ Depending on the API of the optimizer being wrapped, building this wrapper class
 The config file
 ---------------
 
+Note: A config file is now optional. If no ``config.json`` is provided, the experiment launcher will look for all folders with an `optimizer.py` in the ``--opt-root`` directory.
+
 Each optimizer wrapper can have multiple configurations, which is each referred to as a different optimizer in the benchmark. For example, the JSON config file will have entries as follows:
 
 .. code-block:: json

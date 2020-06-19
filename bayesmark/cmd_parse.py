@@ -21,13 +21,14 @@ import json
 import os.path
 import sys
 import uuid as pyuuid
-import warnings
 from enum import IntEnum, auto
+from pathlib import PosixPath
 
 import git
 from git.exc import InvalidGitRepositoryError
-from pathvalidate.argparse import filename, validate_filename, validate_filepath
+from pathvalidate.argparse import sanitize_filename, validate_filename, validate_filepath
 
+from bayesmark.builtin_opt.config import CONFIG
 from bayesmark.constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAMES, OPTIMIZERS_FILE, PY_INTERPRETER
 from bayesmark.path_util import absopen, abspath
 from bayesmark.util import shell_join
@@ -115,7 +116,12 @@ def filepath(value):
     """Work around for `pathvalidate` bug."""
     if value == ".":
         return value
-    validate_filepath(value)
+    validate_filepath(value, platform="auto")
+    return value
+
+
+def filename(value):
+    validate_filename(value, platform="universal")
     return value
 
 
@@ -136,7 +142,7 @@ def positive_int(val_str):
 
 def joinable(val_str):
     val = str(val_str)  # just for good measure
-    validate_filename(val)  # we choose to be at least as strict as filenames
+    validate_filename(val, platform="universal")  # we choose to be at least as strict as filenames
     if ARG_DELIM in val:
         msg = "delimiter %s not allowed in choice %s" % (ARG_DELIM, val)
         raise argparse.ArgumentTypeError(msg)
@@ -209,7 +215,7 @@ def launcher_parser(description):
 
     add_argument(parser, CmdArgs.optimizer, type=joinable, nargs="+", help="optimizers to use")
     add_argument(parser, CmdArgs.data, type=joinable, nargs="+", help="data sets to use")
-    add_argument(parser, CmdArgs.classifier, type=str, choices=MODEL_NAMES, nargs="+", help="classifiers to use")
+    add_argument(parser, CmdArgs.classifier, type=joinable, nargs="+", help="classifiers to use")
     add_argument(parser, CmdArgs.metric, type=str, choices=METRICS, nargs="+", help="scoring metric to use")
 
     # Iterations counts used in experiments
@@ -244,7 +250,7 @@ def experiment_parser(description):
     add_argument(parser, CmdArgs.db, type=filename, required=True, help="database ID of this benchmark experiment")
     add_argument(parser, CmdArgs.optimizer, required=True, type=joinable, help="optimizer to use")
     add_argument(parser, CmdArgs.data, required=True, type=joinable, help="data set to use")
-    add_argument(parser, CmdArgs.classifier, required=True, type=str, choices=MODEL_NAMES, help="classifier to use")
+    add_argument(parser, CmdArgs.classifier, required=True, type=joinable, help="classifier to use")
     add_argument(parser, CmdArgs.metric, required=True, type=str, choices=METRICS, help="scoring metric to use")
 
     add_argument(parser, CmdArgs.n_calls, default=100, type=positive_int, help="number of function evaluations")
@@ -261,7 +267,7 @@ def agg_parser(description):
         parser,
         CmdArgs.ravel,
         action="store_true",
-        help="ravel all studies to store batch suggestions as if they were serial",
+        help="ravel all studies to store batch suggestions as if they were serial (deprecated)",
     )
     return parser
 
@@ -297,13 +303,34 @@ def parse_args(parser, argv=None):
     return args
 
 
+def _cleanup(filename_str):
+    filename_str = sanitize_filename(filename_str, replacement_text="-", platform="universal")
+    filename_str = filename_str.replace(ARG_DELIM, "-")
+    return filename_str
+
+
+def infer_settings(opt_root, opt_pattern="**/optimizer.py"):
+    opt_root = PosixPath(opt_root)
+
+    source_files = sorted(opt_root.glob(opt_pattern))
+    source_files = [ss.relative_to(opt_root) for ss in source_files]
+
+    settings = {_cleanup(str(ss.parent)): [str(ss), {}] for ss in source_files}
+
+    assert all(joinable(kk) for kk in settings), "Something went wrong in name sanitization."
+    assert len(settings) == len(source_files), "Name collision after sanitization of %s" % repr(source_files)
+    assert len(set(CONFIG.keys()) & set(settings.keys())) == 0, "Name collision with builtin optimizers."
+
+    return settings
+
+
 def load_optimizer_settings(opt_root):
     try:
         with absopen(os.path.join(opt_root, OPTIMIZERS_FILE), "r") as f:
             settings = json.load(f)
     except FileNotFoundError:
-        warnings.warn("optimizer config file %s not found. Only builtin optimizers can be used." % OPTIMIZERS_FILE)
-        settings = {}
+        # Search for optimizers instead
+        settings = infer_settings(opt_root)
 
     assert isinstance(settings, dict)
     assert not any((ARG_DELIM in opt) for opt in settings), "optimizer names violates name convention"

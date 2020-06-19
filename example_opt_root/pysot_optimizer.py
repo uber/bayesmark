@@ -16,7 +16,7 @@ from bayesmark.space import JointSpace
 class PySOTOptimizer(AbstractOptimizer):
     primary_import = "pysot"
 
-    def __init__(self, api_config, **kwargs):
+    def __init__(self, api_config):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters

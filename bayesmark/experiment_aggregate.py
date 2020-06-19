@@ -13,6 +13,7 @@
 # limitations under the License.
 """Aggregate the results of many studies to prepare analysis.
 """
+import json
 import logging
 from collections import Counter
 
@@ -23,15 +24,16 @@ import bayesmark.constants as cc
 import bayesmark.xr_util as xru
 from bayesmark.cmd_parse import CmdArgs, agg_parser, parse_args, serializable_dict, unserializable_dict
 from bayesmark.constants import ARG_DELIM, EVAL_RESULTS, ITER, METHOD, SUGGEST, TEST_CASE, TIME_RESULTS, TRIAL
-from bayesmark.experiment import build_eval_ds, build_timing_ds
 from bayesmark.serialize import XRSerializer
 from bayesmark.signatures import analyze_signatures
+from bayesmark.sklearn_funcs import SklearnModel
 from bayesmark.util import str_join_safe
 
 logger = logging.getLogger(__name__)
 
 
 def validate_time(all_time):
+    """Validate the aggregated time data set."""
     assert isinstance(all_time, xr.Dataset)
     assert all_time[cc.SUGGEST_PHASE].dims == (ITER,)
     assert all_time[cc.EVAL_PHASE].dims == (ITER, SUGGEST)
@@ -40,13 +42,15 @@ def validate_time(all_time):
 
 
 def validate_perf(perf_da):
-    assert isinstance(perf_da, xr.DataArray)
+    """Validate the input eval data arrays."""
+    assert isinstance(perf_da, xr.Dataset)
     assert perf_da.dims == (ITER, SUGGEST)
     assert xru.is_simple_coords(perf_da.coords)
     assert not np.any(np.isnan(perf_da.values))
 
 
 def validate_agg_perf(perf_da, min_trial=1):
+    """Validate the aggregated eval data set."""
     assert isinstance(perf_da, xr.DataArray)
     assert perf_da.dims == (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)
     assert xru.is_simple_coords(perf_da.coords, dims=(ITER, SUGGEST, TRIAL))
@@ -82,35 +86,6 @@ def summarize_time(all_time):
     return time_summary
 
 
-def _ravel_perf(perf_da):
-    validate_perf(perf_da)
-
-    function_evals = np.ravel(perf_da.values, order="C")
-    perf_ds = build_eval_ds(function_evals[:, None])
-    perf_da = xru.only_dataarray(perf_ds)
-    return perf_da
-
-
-def _ravel_time(time_ds):
-    validate_time(time_ds)
-
-    n_iter, n_suggest = time_ds.sizes[ITER], time_ds.sizes[SUGGEST]
-
-    def padder(X):
-        Y = np.pad(X[:, None], [(0, 0), (0, n_suggest - 1)], mode="constant", constant_values=0)
-        assert Y.shape == (n_iter, n_suggest)
-        return Y
-
-    # Unclear if this is the most sensible way to ravel time variables when comparing across batch sizes, but we don't
-    # really use time in analysis. So, this is good enough for now.
-    suggest_time = np.ravel(padder(time_ds[cc.SUGGEST_PHASE].values), order="C")
-    eval_time = np.ravel(time_ds[cc.EVAL_PHASE].values, order="C")[:, None]
-    observe_time = np.ravel(padder(time_ds[cc.OBS_PHASE].values), order="C")
-
-    time_ds = build_timing_ds(suggest_time, eval_time, observe_time)
-    return time_ds
-
-
 def concat_experiments(all_experiments, ravel=False):
     """Aggregate the Datasets from a series of experiments into combined Dataset.
 
@@ -118,18 +93,13 @@ def concat_experiments(all_experiments, ravel=False):
     ----------
     all_experiments : typing.Iterable
         Iterable (possible from a generator) with the Datasets from each experiment. Each item in `all_experiments` is
-        a pair containing ``(meta_data, data)``. The `meta_data` contains a `tuple` of `str` with
-        ``test_case, optimizer, uuid``. The `data` contains a tuple of ``(perf_da, time_ds, sig)``. The `perf_da` is an
-        :class:`xarray:xarray.DataArray` containing the evaluation results with dimensions ``(ITER, SUGGEST)``. The
-        `time_ds` is an :class:`xarray:xarray.Dataset` containing the timing results of the form accepted by
-        `summarize_time`. The coordinates must be compatible with `perf_da`. Finally, `sig` contains the `test_case`
-        signature and must be `list(float)`.
+        a pair containing ``(meta_data, data)``. See `load_experiments` for details on these variables,
     ravel : bool
         If true, ravel all studies to store batch suggestions as if they were serial.
 
     Returns
     -------
-    all_perf : :class:`xarray:xarray.DataArray`
+    all_perf : :class:`xarray:xarray.Dataset`
         DataArray containing all of the `perf_da` from the experiments. The meta-data from the experiments are included
         as extra dimensions. `all_perf` has dimensions ``(ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)``. To convert the
         `uuid` to a trial, there must be an equal number of repetition in the experiments for each `TEST_CASE`,
@@ -138,45 +108,62 @@ def concat_experiments(all_experiments, ravel=False):
     all_time : :class:`xarray:xarray.Dataset`
         Dataset containing all of the `time_ds` from the experiments. The new dimensions are
         ``(ITER, TEST_CASE, METHOD, TRIAL)``. It has the same variables as `time_ds`.
+    all_suggest : :class:`xarray:xarray.Dataset`
+        DataArray containing all of the `suggest_ds` from the experiments. It has dimensions
+        ``(ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)``.
     all_sigs : dict(str, list(list(float)))
         Aggregate of all experiment signatures.
     """
     all_perf = {}
     all_time = {}
+    all_suggest = {}
     all_sigs = {}
     trial_counter = Counter()
-    for (test_case, optimizer, uuid), (perf_da, time_ds, sig) in all_experiments:
+    for (test_case, optimizer, uuid), (perf_ds, time_ds, suggest_ds, sig) in all_experiments:
         if ravel:
-            n_suggest = perf_da.sizes[SUGGEST]
-            perf_da = _ravel_perf(perf_da)
-            time_ds = _ravel_time(time_ds)
-            optimizer = str_join_safe(ARG_DELIM, (optimizer, "p%d" % n_suggest), append=True)
+            raise NotImplementedError("ravel is deprecated. Just reshape in analysis steps instead.")
 
         case_key = (test_case, optimizer, trial_counter[(test_case, optimizer)])
         trial_counter[(test_case, optimizer)] += 1
 
         # Process perf data
-        assert perf_da.dims == (ITER, SUGGEST)
-        all_perf[case_key] = perf_da
+        assert all(perf_ds[kk].dims == (ITER, SUGGEST) for kk in perf_ds)
+        all_perf[case_key] = perf_ds
 
         # Process time data
         all_time[case_key] = summarize_time(time_ds)
+
+        # Process suggestion data
+        all_suggest_curr = all_suggest.setdefault(test_case, {})
+        all_suggest_curr[case_key] = suggest_ds
 
         # Handle the signatures
         all_sigs.setdefault(test_case, []).append(sig)
     assert min(trial_counter.values()) == max(trial_counter.values()), "Uneven number of trials per test case"
 
     # Now need to concat dict of datasets into single dataset
-    all_perf = xru.da_concat(all_perf, dims=(TEST_CASE, METHOD, TRIAL))
-    assert all_perf.dims == (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)
-    assert not np.any(np.isnan(all_perf.values)), "Missing combinations of method and test case"
+    all_perf = xru.ds_concat(all_perf, dims=(TEST_CASE, METHOD, TRIAL))
+    assert all(all_perf[kk].dims == (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL) for kk in all_perf)
+    assert not any(
+        np.any(np.isnan(all_perf[kk].values)) for kk in all_perf
+    ), "Missing combinations of method and test case"
 
     all_time = xru.ds_concat(all_time, dims=(TEST_CASE, METHOD, TRIAL))
     assert all(all_time[kk].dims == (ITER, TEST_CASE, METHOD, TRIAL) for kk in all_time)
     assert not any(np.any(np.isnan(all_time[kk].values)) for kk in all_time)
     assert xru.coord_compat((all_perf, all_time), (ITER, TEST_CASE, METHOD, TRIAL))
 
-    return all_perf, all_time, all_sigs
+    for test_case in all_suggest:
+        all_suggest[test_case] = xru.ds_concat(all_suggest[test_case], dims=(TEST_CASE, METHOD, TRIAL))
+        assert all(
+            all_suggest[test_case][kk].dims == (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)
+            for kk in all_suggest[test_case]
+        )
+        assert not any(np.any(np.isnan(all_suggest[test_case][kk].values)) for kk in all_suggest[test_case])
+        assert xru.coord_compat((all_perf, all_suggest[test_case]), (ITER, METHOD, TRIAL))
+        assert all_suggest[test_case].coords[TEST_CASE].shape == (1,), "test case should be singleton"
+
+    return all_perf, all_time, all_suggest, all_sigs
 
 
 def load_experiments(uuid_list, db_root, dbid):  # pragma: io
@@ -195,22 +182,24 @@ def load_experiments(uuid_list, db_root, dbid):  # pragma: io
     ------
     meta_data : (str, str, str)
         The `meta_data` contains a `tuple` of `str` with ``test_case, optimizer, uuid``.
-    data : (:class:`xarray:xarray.DataArray`, :class:`xarray:xarray.Dataset`, list(float))
-        The `data` contains a tuple of ``(perf_da, time_ds, sig)``. The `perf_da` is an
-        :class:`xarray:xarray.DataArray` containing the evaluation results with dimensions ``(ITER, SUGGEST)``. The
-        `time_ds` is an :class:`xarray:xarray.Dataset` containing the timing results of the form accepted by
-        `summarize_time`. The coordinates must be compatible with `perf_da`. Finally, `sig` contains the `test_case`
-        signature and must be `list(float)`.
+    data : (:class:`xarray:xarray.Dataset`, :class:`xarray:xarray.Dataset`, :class:`xarray:xarray.Dataset` list(float))
+        The `data` contains a tuple of ``(perf_ds, time_ds, suggest_ds, sig)``. The `perf_ds` is a
+        :class:`xarray:xarray.Dataset` containing the evaluation results with dimensions ``(ITER, SUGGEST)``, each
+        variable is an objective. The `time_ds` is an :class:`xarray:xarray.Dataset` containing the timing results of
+        the form accepted by `summarize_time`. The coordinates must be compatible with `perf_ds`. The suggest_ds is a
+        :class:`xarray:xarray.Dataset` containing the inputs to the function evaluations. Each variable is a function
+        input. Finally, `sig` contains the `test_case` signature and must be `list(float)`.
     """
     uuids_seen = set()
     for uuid_ in uuid_list:
         logger.info(uuid_.hex)
 
         # Load perf and timing data
-        perf_da, meta = XRSerializer.load(db_root, db=dbid, key=cc.EVAL, uuid_=uuid_)
-        perf_da = xru.only_dataarray(perf_da)
+        perf_ds, meta = XRSerializer.load(db_root, db=dbid, key=cc.EVAL, uuid_=uuid_)
         time_ds, meta_t = XRSerializer.load(db_root, db=dbid, key=cc.TIME, uuid_=uuid_)
         assert meta == meta_t, "meta data should between time and eval files"
+        suggest_ds, meta_t = XRSerializer.load(db_root, db=dbid, key=cc.SUGGEST_LOG, uuid_=uuid_)
+        assert meta == meta_t, "meta data should between suggest and eval files"
 
         # Get signature to pass out as well
         _, sig = meta["signature"]
@@ -219,8 +208,8 @@ def load_experiments(uuid_list, db_root, dbid):  # pragma: io
 
         # Build the new indices for combined data, this could be put in function for easier testing
         eval_args = unserializable_dict(meta["args"])  # Unpack meta-data
-        test_case = str_join_safe(
-            ARG_DELIM, (eval_args[CmdArgs.classifier], eval_args[CmdArgs.data], eval_args[CmdArgs.metric])
+        test_case = SklearnModel.test_case_str(
+            eval_args[CmdArgs.classifier], eval_args[CmdArgs.data], eval_args[CmdArgs.metric]
         )
         optimizer = str_join_safe(
             ARG_DELIM, (eval_args[CmdArgs.optimizer], eval_args[CmdArgs.opt_rev], eval_args[CmdArgs.rev])
@@ -235,7 +224,7 @@ def load_experiments(uuid_list, db_root, dbid):  # pragma: io
 
         # Return key -> data so this generator can be iterated over in dict like manner
         meta_data = (test_case, optimizer, args_uuid)
-        data = (perf_da, time_ds, sig)
+        data = (perf_ds, time_ds, suggest_ds, sig)
         yield meta_data, data
 
 
@@ -249,25 +238,29 @@ def main():
     if args[CmdArgs.verbose]:
         logger.addHandler(logging.StreamHandler())
 
-    # Always sort after listdir
+    # Get list of UUIDs
     uuid_list = XRSerializer.get_uuids(args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.EVAL)
     uuid_list_ = XRSerializer.get_uuids(args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.TIME)
     assert uuid_list == uuid_list_, "UUID list does not match between time and eval results"
+    uuid_list_ = XRSerializer.get_uuids(args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.SUGGEST_LOG)
+    assert uuid_list == uuid_list_, "UUID list does not match between suggest log and eval results"
 
     # Get iterator of all experiment data dumps, load in and process, and concat
     data_G = load_experiments(uuid_list, args[CmdArgs.db_root], args[CmdArgs.db])
-    all_perf, all_time, all_sigs = concat_experiments(data_G, ravel=args[CmdArgs.ravel])
+    all_perf, all_time, all_suggest, all_sigs = concat_experiments(data_G, ravel=args[CmdArgs.ravel])
 
     # Check the concat signatures make are coherent
     sig_errs, signatures_median = analyze_signatures(all_sigs)
     logger.info("Signature errors:\n%s" % sig_errs.to_string())
+    print(json.dumps({"exp-agg sig errors": sig_errs.T.to_dict()}))
 
     # Dump and save it all out
     logger.info("saving")
     meta = {"args": serializable_dict(args), "signature": signatures_median}
-    all_perf = all_perf.to_dataset(name="results")
     XRSerializer.save_derived(all_perf, meta, args[CmdArgs.db_root], db=args[CmdArgs.db], key=EVAL_RESULTS)
     XRSerializer.save_derived(all_time, meta, args[CmdArgs.db_root], db=args[CmdArgs.db], key=TIME_RESULTS)
+    for test_case, ds in all_suggest.items():
+        XRSerializer.save_derived(ds, meta, args[CmdArgs.db_root], db=args[CmdArgs.db], key=test_case)
 
     logger.info("done")
 

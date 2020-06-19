@@ -34,4 +34,7 @@ def test_sklearn_model(model, dataset, metric, shuffle_seed, rs_seed):
     x_guess, = suggest_dict([], [], api_config, n_suggestions=1, random=np.random.RandomState(rs_seed))
 
     loss = test_prob.evaluate(x_guess)
-    assert np.isscalar(loss)
+
+    assert isinstance(loss, tuple)
+    assert all(isinstance(xx, float) for xx in loss)
+    assert np.shape(loss) == np.shape(test_prob.objective_names)

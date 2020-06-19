@@ -16,6 +16,11 @@
 import shlex
 
 
+def in_or_none(x, L):
+    """Check if item is in list of list is None."""
+    return (L is None) or (x in L)
+
+
 def all_unique(L):
     """Check if all elements in a list are unique.
 

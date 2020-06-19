@@ -9,5 +9,4 @@ script:
     - ./integration_test_with_setup.sh
     - ./test.sh
     - cat requirements/*.txt >requirements.txt
-    - fossa init
-    - fossa analyze
+    - '[ ! -z "$FOSSA_API_KEY" ] && (fossa init && fossa analyze) || true'

@@ -23,7 +23,8 @@ PY_INTERPRETER = "python"  # What command to call for sub process, we could spec
 # Variables to save in SAL
 EVAL = "eval"
 TIME = "time"
-EXP_VARS = (EVAL, TIME)
+SUGGEST_LOG = "suggest_log"
+EXP_VARS = (EVAL, TIME, SUGGEST_LOG)
 
 # Derived variables to save in SAL
 TIME_RESULTS = "time"
@@ -38,6 +39,10 @@ TEST_CASE = "function"
 METHOD = "optimizer"
 TRIAL = "study_id"
 SUGGEST = "suggestion"
+OBJECTIVE = "objective"
+
+# Dataset variables for eval results
+VISIBLE_TO_OPT = "_visible_to_opt"
 
 # Dataset variables for time results
 SUGGEST_PHASE = "suggest"

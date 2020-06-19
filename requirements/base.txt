@@ -6,19 +6,19 @@
 #    pip-compile-multi
 #
 gitdb2==2.0.5             # via gitpython
-gitpython==2.1.11
-importlib-metadata==0.18
-numpy==1.16.1
-pandas==0.24.0
-pathvalidate==0.29.0
+gitpython==2.1.11         # via -r requirements/base.in
+importlib-metadata==0.18  # via -r requirements/base.in
+numpy==1.16.1             # via -r requirements/base.in, pandas, scikit-learn, scipy, xarray
+pandas==0.24.0            # via -r requirements/base.in, xarray
+pathvalidate==0.29.0      # via -r requirements/base.in
 python-dateutil==2.8.0    # via pandas
 pytz==2019.1              # via pandas
-scikit-learn==0.20.2
-scipy==1.2.0
+scikit-learn==0.20.2      # via -r requirements/base.in
+scipy==1.2.0              # via -r requirements/base.in, scikit-learn
 six==1.12.0               # via python-dateutil
 smmap2==2.0.5             # via gitdb2
-xarray==0.12.2
+xarray==0.12.2            # via -r requirements/base.in
 zipp==0.5.2               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools==41.2.0        # via pathvalidate
+# setuptools

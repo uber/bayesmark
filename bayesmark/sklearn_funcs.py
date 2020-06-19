@@ -27,6 +27,8 @@ The kwarg dict is `fixed_param_dict` + `search_param_dict`. The
 `search_param_api_dict`. See the API description for information on setting up
 the `search_param_api_dict`.
 """
+import os.path
+import pickle as pkl
 import warnings
 from abc import ABC, abstractmethod
 
@@ -34,17 +36,19 @@ import numpy as np
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor, RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Lasso, LogisticRegression, Ridge
 from sklearn.metrics.scorer import get_scorer
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.utils import shuffle
 
-from bayesmark.constants import METRICS, MODEL_NAMES
-from bayesmark.data import METRICS_LOOKUP, ProblemType, load_data
+from bayesmark.constants import ARG_DELIM, METRICS, MODEL_NAMES, VISIBLE_TO_OPT
+from bayesmark.data import METRICS_LOOKUP, ProblemType, get_problem_type, load_data
+from bayesmark.space import JointSpace
+from bayesmark.util import str_join_safe
 
-CV_SPLITS = 3  # 5 probably makes more sense, but will be slower.
+# Using 3 would be faster, but 5 is the most realistic CV split (5-fold)
+CV_SPLITS = 5
 
 # We should add cat variables into some of these configurations but a lot of
 # the wrappers for the BO methods really have trouble with cat types.
@@ -242,6 +246,9 @@ class SklearnModel(TestFunction):
         "mse": "neg_mean_squared_error",
     }
 
+    # This can be static and constant for now
+    objective_names = (VISIBLE_TO_OPT, "generalization")
+
     def __init__(self, model, dataset, metric, shuffle_seed=0, data_root=None):
         """Build class that wraps sklearn classifier/regressor CV score for use as an objective function.
 
@@ -287,7 +294,9 @@ class SklearnModel(TestFunction):
         self.api_config = api_config
 
         # Always shuffle your data to be safe. Use fixed seed for reprod.
-        self.data_X, self.data_y = shuffle(data, target, random_state=shuffle_seed)
+        self.data_X, self.data_Xt, self.data_y, self.data_yt = train_test_split(
+            data, target, test_size=0.2, random_state=shuffle_seed, shuffle=True
+        )
 
         assert metric in METRICS, "Unknown metric %s" % metric
         assert metric in METRICS_LOOKUP[problem_type], "Incompatible metric %s with problem type %s" % (
@@ -306,7 +315,7 @@ class SklearnModel(TestFunction):
 
         Returns
         -------
-        overall_loss : float
+        cv_loss : float
             Average loss over CV splits for sklearn model when tested using the settings in params.
         """
         params = dict(params)  # copy to avoid modification of original
@@ -323,10 +332,99 @@ class SklearnModel(TestFunction):
             warnings.filterwarnings("ignore", category=UserWarning)
             S = cross_val_score(clf, self.data_X, self.data_y, scoring=self.scorer, cv=CV_SPLITS)
         # Take the mean score across all x-val splits
-        overall_score = np.mean(S)
+        cv_score = np.mean(S)
 
-        # get_scorer makes everything a score not a loss, so we need to negate
-        # to get the loss back.
-        overall_loss = -overall_score
-        assert np.isfinite(overall_loss), "loss not even finite"
-        return overall_loss
+        # Now let's get the generalization error for same hypers
+        clf = self.base_model(**params)
+        clf.fit(self.data_X, self.data_y)
+        generalization_score = self.scorer(clf, self.data_Xt, self.data_yt)
+
+        # get_scorer makes everything a score not a loss, so we need to negate to get the loss back
+        cv_loss = -cv_score
+        assert np.isfinite(cv_loss), "loss not even finite"
+        generalization_loss = -generalization_score
+        assert np.isfinite(generalization_loss), "loss not even finite"
+
+        # Unbox to basic float to keep it simple
+        cv_loss = cv_loss.item()
+        assert isinstance(cv_loss, float)
+        generalization_loss = generalization_loss.item()
+        assert isinstance(generalization_loss, float)
+
+        # For now, score with same objective. We can later add generalization error
+        return cv_loss, generalization_loss
+
+    @staticmethod
+    def test_case_str(model, dataset, scorer):
+        """Generate the combined test case string from model, dataset, and scorer combination."""
+        test_case = str_join_safe(ARG_DELIM, (model, dataset, scorer))
+        return test_case
+
+    @staticmethod
+    def inverse_test_case_str(test_case):
+        """Inverse of `test_case_str`."""
+        model, dataset, scorer = test_case.split(ARG_DELIM)
+        assert test_case == SklearnModel.test_case_str(model, dataset, scorer)
+        return model, dataset, scorer
+
+
+class SklearnSurrogate(TestFunction):
+    """Test class for sklearn classifier/regressor CV score objective function surrogates.
+    """
+
+    # This can be static and constant for now
+    objective_names = (VISIBLE_TO_OPT, "generalization")
+
+    def __init__(self, model, dataset, scorer, path):
+        """Build class that wraps sklearn classifier/regressor CV score for use as an objective function surrogate.
+
+        Parameters
+        ----------
+        model : str
+            Which classifier to use, must be key in `MODELS_CLF` or `MODELS_REG` dict depending on if dataset is
+            classification or regression.
+        dataset : str
+            Which data set to use, must be key in `DATA_LOADERS` dict, or name of custom csv file.
+        scorer : str
+            Which sklearn scoring metric to use, in `SCORERS_CLF` list or `SCORERS_REG` dict depending on if dataset is
+            classification or regression.
+        path : str
+            Root directory to look for all pickle files.
+        """
+        TestFunction.__init__(self)
+
+        # Find the space class, we could consider putting this in pkl too
+        problem_type = get_problem_type(dataset)
+        assert problem_type in (ProblemType.clf, ProblemType.reg)
+        _, _, self.api_config = MODELS_CLF[model] if problem_type == ProblemType.clf else MODELS_REG[model]
+        self.space = JointSpace(self.api_config)
+
+        # Load the pre-trained model
+        fname = SklearnModel.test_case_str(model, dataset, scorer) + ".pkl"
+        path = os.path.join(path, fname)
+        with open(path, "rb") as f:
+            self.model = pkl.load(f)
+        assert callable(getattr(self.model, "predict", None))
+
+    def evaluate(self, params):
+        """Evaluate the sklearn CV objective at a particular parameter setting.
+
+        Parameters
+        ----------
+        params : dict(str, object)
+            The varying (non-fixed) parameter dict to the sklearn model.
+
+        Returns
+        -------
+        overall_loss : float
+            Average loss over CV splits for sklearn model when tested using the settings in params.
+        """
+        x = self.space.warp([params])
+        y, = self.model.predict(x)
+
+        assert y.shape == (len(self.objective_names),)
+        assert y.dtype.kind == "f"
+
+        assert np.all(-np.inf < y)  # Will catch nan too
+        y = tuple(y.tolist())  # Make consistent with SklearnModel typing
+        return y

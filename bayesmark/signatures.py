@@ -40,14 +40,16 @@ def get_func_signature(f, api_config):
     -------
     signature_x : list(dict(str, object)) of shape (n_suggest,)
         The input locations probed on signature call.
-    signature_x : list(float) of shape (n_suggest,)
+    signature_y : list(float) of shape (n_suggest,)
         The objective function values at the inputs points. This is the real signature.
     """
     # Make sure get same sequence on every call to be a signature
     random = np.random.RandomState(0)
 
     signature_x = rs.suggest_dict([], [], api_config, n_suggestions=N_SUGGESTIONS, random=random)
-    signature_y = [f(xx) for xx in signature_x]
+
+    # For now, we only take the first output as the signature. We can generalize this later.
+    signature_y = [f(xx)[0] for xx in signature_x]
     assert np.all(np.isfinite(signature_y)), "non-finite values found in signature for function"
     return signature_x, signature_y
 

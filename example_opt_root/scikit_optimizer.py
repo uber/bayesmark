@@ -10,7 +10,7 @@ from bayesmark.experiment import experiment_main
 class ScikitOptimizer(AbstractOptimizer):
     primary_import = "scikit-optimize"
 
-    def __init__(self, api_config, base_estimator="GP", acq_func="gp_hedge", n_initial_points=5, **kwargs):
+    def __init__(self, api_config, base_estimator="GP", acq_func="gp_hedge", n_initial_points=5):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -34,10 +34,6 @@ class ScikitOptimizer(AbstractOptimizer):
         # dimensions list to be safe. If we can commit to using the newer
         # versions of skopt we can delete self.dimensions.
         self.dimensions_list = tuple(dd.name for dd in dimensions)
-
-        # Undecided where we want to pass the kwargs, so for now just make sure
-        # they are blank
-        assert len(kwargs) == 0
 
         self.skopt = SkOpt(
             dimensions,

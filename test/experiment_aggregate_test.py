@@ -14,7 +14,7 @@
 from itertools import product
 
 import numpy as np
-from hypothesis import given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import floats
 from hypothesis_gufunc.extra.xr import (
     fixed_datasets,
@@ -27,6 +27,7 @@ from hypothesis_gufunc.extra.xr import (
 
 import bayesmark.experiment_aggregate as agg
 from bayesmark.constants import EVAL_PHASE, ITER, METHOD, OBS_PHASE, SUGGEST, SUGGEST_PHASE, TEST_CASE, TRIAL
+from bayesmark.experiment import OBJECTIVE_NAMES
 from bayesmark.signatures import N_SUGGESTIONS
 
 N_SIG = N_SUGGESTIONS
@@ -46,26 +47,37 @@ def data_to_concat():
 
             ds_sub = ds.sel({TEST_CASE: test_case, METHOD: method, TRIAL: trial}, drop=True)
 
-            perf_da = ds_sub["perf"]
+            perf_ds = ds_sub[list(OBJECTIVE_NAMES)]
             time_ds = ds_sub[[SUGGEST_PHASE, EVAL_PHASE, OBS_PHASE]]
+            suggest_ds = ds_sub[["foo", "bar", "baz"]]
             sig = ds_sub["sig"].values.tolist()
-            data = (perf_da, time_ds, sig)
+            data = (perf_ds, time_ds, suggest_ds, sig)
             L.append((meta_data, data))
-            assert not np.any(np.isnan(perf_da.values))
+            assert not any(np.any(np.isnan(perf_ds[kk].values)) for kk in perf_ds)
             assert not any(np.any(np.isnan(time_ds[kk].values)) for kk in time_ds)
+            assert not any(np.any(np.isnan(suggest_ds[kk].values)) for kk in suggest_ds)
             assert not np.any(np.isnan(sig))
         return L
 
     vars_to_dims = {
-        "perf": (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL),
         "sig": (SIG_POINT, TEST_CASE, METHOD, TRIAL),
         SUGGEST_PHASE: (ITER, TEST_CASE, METHOD, TRIAL),
         EVAL_PHASE: (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL),
         OBS_PHASE: (ITER, TEST_CASE, METHOD, TRIAL),
     }
+    dtype = {SUGGEST_PHASE: np.float_, EVAL_PHASE: np.float_, OBS_PHASE: np.float_, "sig": np.float_}
+
+    for obj in OBJECTIVE_NAMES:
+        vars_to_dims[obj] = (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)
+        dtype[obj] = np.float_
+
+    # We should also generate this using the space strategy, but hard coding this test case is good enough got now.
+    input_vars = {"foo": np.float_, "bar": np.float_, "baz": np.int_}
+    for vv, dd in input_vars.items():
+        vars_to_dims[vv] = (ITER, SUGGEST, TEST_CASE, METHOD, TRIAL)
+        dtype[vv] = dd
 
     float_no_nan = floats(allow_nan=False, min_value=-10, max_value=10)
-    dtype = {SUGGEST_PHASE: np.float_, EVAL_PHASE: np.float_, OBS_PHASE: np.float_, "perf": np.float_, "sig": np.float_}
     # Using on str following dim conventions for coords here
     coords_st = {
         ITER: simple_coords(min_side=1),
@@ -100,24 +112,8 @@ def test_summarize_time(all_time):
     assert time_summary is not None
 
 
-@given(perf_dataarrays())
-def test_ravel_perf(perf_da):
-    perf_da = agg._ravel_perf(perf_da)
-
-
-@given(time_datasets())
-def test_ravel_time(time_ds):
-    time_ds = agg._ravel_time(time_ds)
-
-
 @given(data_to_concat())
-@settings(deadline=None)
+@settings(deadline=None, suppress_health_check=(HealthCheck.too_slow,))
 def test_concat_experiments(all_experiments):
     all_experiments = list(all_experiments)
-    all_perf, all_time, all_sigs = agg.concat_experiments(all_experiments, ravel=False)
-
-
-@given(data_to_concat())
-@settings(deadline=None)
-def test_concat_experiments_ravel(all_experiments):
-    all_perf, all_time, all_sigs = agg.concat_experiments(all_experiments, ravel=True)
+    all_perf, all_time, all_suggest, all_sigs = agg.concat_experiments(all_experiments, ravel=False)

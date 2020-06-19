@@ -7,9 +7,9 @@
 #
 -r base.txt
 -r optimizers.txt
-hypothesis-gufunc==0.0.5rc2
-hypothesis==4.32.3
-pytest-cov==2.7.1
+hypothesis-gufunc==0.0.5rc2  # via -r requirements/test.in
+hypothesis==4.32.3        # via -r requirements/test.in, hypothesis-gufunc
+pytest-cov==2.7.1         # via -r requirements/test.in
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools==41.2.0        # via kiwisolver, pathvalidate
+# setuptools

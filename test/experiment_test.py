@@ -16,7 +16,7 @@ import os.path
 
 import numpy as np
 from hypothesis import assume, given, settings
-from hypothesis.strategies import floats, integers, sampled_from
+from hypothesis.strategies import floats, integers, sampled_from, text
 from hypothesis_gufunc.gufunc import gufunc_args
 
 import bayesmark.experiment as exp
@@ -59,11 +59,10 @@ class FlakyProblem(TestFunction):
 
     def evaluate(self, params):
         assert self.random.rand() <= 0.5
-        return 0.0
+        return [0.0]
 
 
 @given(
-    space_configs(allow_missing=True),
     sampled_from(MODEL_NAMES),
     sampled_from(DATA_LOADER_NAMES),
     sampled_from(METRICS),
@@ -72,16 +71,14 @@ class FlakyProblem(TestFunction):
     seeds(),
 )
 @settings(max_examples=10, deadline=None)
-def test_run_study(api_config, model_name, dataset, scorer, n_calls, n_suggestions, seed):
-    api_config, _, _, _ = api_config
-
+def test_run_study(model_name, dataset, scorer, n_calls, n_suggestions, seed):
     prob_type = data.get_problem_type(dataset)
     assume(scorer in data.METRICS_LOOKUP[prob_type])
 
     function_instance = SklearnModel(model_name, dataset, scorer)
-    optimizer = RandomOptimizer(api_config, random=np.random.RandomState(seed))
+    optimizer = RandomOptimizer(function_instance.get_api_config(), random=np.random.RandomState(seed))
     optimizer.get_version()
-    exp.run_study(optimizer, function_instance, n_calls, n_suggestions)
+    exp.run_study(optimizer, function_instance, n_calls, n_suggestions, n_obj=len(function_instance.objective_names))
 
 
 @given(space_configs(allow_missing=True), integers(0, 5), integers(1, 3), seeds(), seeds())
@@ -144,10 +141,10 @@ def test_get_objective_signature(model_name, dataset, scorer):
     exp.get_objective_signature(model_name, dataset, scorer)
 
 
-@given(gufunc_args("(n,m)->()", dtype=np.float_, elements=floats()))
+@given(gufunc_args("(n,m,k),(k)->()", dtype=[np.float_, str], elements=[floats(), text()], unique=[False, True]))
 def test_build_eval_ds(args):
-    function_evals, = args
-    exp.build_eval_ds(function_evals)
+    function_evals, objective_names = args
+    exp.build_eval_ds(function_evals, objective_names)
 
 
 @given(gufunc_args("(n),(n,m),(n)->()", dtype=np.float_, elements=floats(min_value=0, max_value=1e6)))

@@ -20,6 +20,7 @@ from hypothesis import given
 from hypothesis.strategies import dictionaries, floats, lists, text, tuples
 
 import bayesmark.signatures as ss
+from bayesmark.experiment import OBJECTIVE_NAMES
 from util import space_configs
 
 N_SIG = ss.N_SUGGESTIONS
@@ -59,7 +60,7 @@ def some_mock_f(x):
     """Some arbitrary deterministic test function.
     """
     random_stream = pyrandom.Random(json.dumps(x, sort_keys=True))
-    y = random_stream.gauss(0, 1)
+    y = [random_stream.gauss(0, 1) for _ in OBJECTIVE_NAMES]
     return y
 
 

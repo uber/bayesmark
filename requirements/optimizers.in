@@ -1,5 +1,5 @@
 -r base.in
-opentuner==0.8.1
+opentuner==0.8.2
 numpy==1.16.1
 scipy==1.2.0
 nevergrad==0.1.4

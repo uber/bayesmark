@@ -106,8 +106,7 @@ def _csv_loader(dataset_name, return_X_y, data_root, clip_x=100):  # pragma: io
 
     target = df.pop(label).values
     if problem_type == ProblemType.clf:
-        # all problems classification problems seen so far are binary
-        assert target.dtype == np.bool_
+        assert target.dtype in (np.bool_, np.int_)
         target = target.astype(np.int_)  # convert to int for skl
     if problem_type == ProblemType.reg:
         assert target.dtype == np.float_

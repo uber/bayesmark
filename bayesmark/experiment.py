@@ -13,9 +13,11 @@
 # limitations under the License.
 """Perform a study.
 """
+import json
 import logging
 import random as pyrandom
 import uuid
+import warnings
 from collections import OrderedDict
 from time import time
 
@@ -27,17 +29,51 @@ import bayesmark.constants as cc
 import bayesmark.random_search as rs
 from bayesmark.builtin_opt.config import CONFIG
 from bayesmark.cmd_parse import CmdArgs
-from bayesmark.constants import ITER, SUGGEST
+from bayesmark.constants import ARG_DELIM, ITER, OBJECTIVE, SUGGEST
 from bayesmark.data import METRICS_LOOKUP, get_problem_type
-from bayesmark.np_util import random_seed
+from bayesmark.np_util import argmin_2d, linear_rescale, random_seed
 from bayesmark.serialize import XRSerializer
-from bayesmark.signatures import get_func_signature
-from bayesmark.sklearn_funcs import SklearnModel
+from bayesmark.signatures import analyze_signature_pair, get_func_signature
+from bayesmark.sklearn_funcs import SklearnModel, SklearnSurrogate
+from bayesmark.space import JointSpace
+from bayesmark.util import chomp, str_join_safe
 
 logger = logging.getLogger(__name__)
 
+# For now treat the objective names as global const. However, in the future these could vary by type of problem.
+OBJECTIVE_NAMES = SklearnModel.objective_names
 
-def run_study(optimizer, test_problem, n_calls, n_suggestions):
+
+def _build_test_problem(model_name, dataset, scorer, path):
+    """Build the class with the class to use an objective. Sort of a factory.
+
+    Parameters
+    ----------
+    model_name : str
+        Which sklearn model we are attempting to tune, must be an element of `constants.MODEL_NAMES`.
+    dataset : str
+        Which data set the model is being tuned to, which must be either a) an element of
+        `constants.DATA_LOADER_NAMES`, or b) the name of a csv file in the `data_root` folder for a custom data set.
+    scorer : str
+        Which metric to use when evaluating the model. This must be an element of `sklearn_funcs.SCORERS_CLF` for
+        classification models, or `sklearn_funcs.SCORERS_REG` for regression models.
+    path : str or None
+        Absolute path to folder containing custom data sets/pickle files with surrogate model.
+
+    Returns
+    -------
+    prob : :class:`.sklearn_funcs.TestFunction`
+        The test function to evaluate in experiments.
+    """
+    if model_name.endswith("-surr"):
+        model_name = chomp(model_name, "-surr")
+        prob = SklearnSurrogate(model_name, dataset, scorer, path=path)
+    else:
+        prob = SklearnModel(model_name, dataset, scorer, data_root=path)
+    return prob
+
+
+def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback=None):
     """Run a study for a single optimizer on a single test problem.
 
     This function can be used for benchmarking on general stateless objectives (not just `sklearn`).
@@ -52,22 +88,36 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions):
         How many iterations of minimization to run.
     n_suggestions : int
         How many parallel evaluation we run each iteration. Must be ``>= 1``.
+    n_obj : int
+        Number of different objectives measured, only objective 0 is seen by optimizer. Must be ``>= 1``.
+    callback : callable
+        Optional callback taking the current best function evaluation. Takes array of shape `(n_obj,)`.
 
     Returns
     -------
-    function_evals : :class:`numpy:numpy.ndarray` of shape (n_calls, n_suggestions)
+    function_evals : :class:`numpy:numpy.ndarray` of shape (n_calls, n_suggestions, n_obj)
         Value of objective for each evaluation.
     timing_evals : (:class:`numpy:numpy.ndarray`, :class:`numpy:numpy.ndarray`, :class:`numpy:numpy.ndarray`)
         Tuple of 3 timing results: ``(suggest_time, eval_time, observe_time)`` with shapes ``(n_calls,)``,
         ``(n_calls, n_suggestions)``, and ``(n_calls,)``. These are the time to make each suggestion, the time for each
         evaluation of the objective function, and the time to make an observe call.
+    suggest_log : list(list(dict(str, object)))
+        Log of the suggestions corresponding to the `function_evals`.
     """
     assert n_suggestions >= 1, "batch size must be at least 1"
+    assert n_obj >= 1, "Must be at least one objective"
+
+    space_for_validate = JointSpace(test_problem.get_api_config())
+
+    if callback is not None:
+        # First do initial log at inf score, in case we don't even get to first eval before crash/job timeout
+        callback(np.full((n_obj,), np.inf, dtype=float))
 
     suggest_time = np.zeros(n_calls)
     observe_time = np.zeros(n_calls)
     eval_time = np.zeros((n_calls, n_suggestions))
-    function_evals = np.zeros((n_calls, n_suggestions))
+    function_evals = np.zeros((n_calls, n_suggestions, n_obj))
+    suggest_log = [None] * n_calls
     for ii in range(n_calls):
         tt = time()
         try:
@@ -82,6 +132,9 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions):
         logger.info("suggestion time taken %f iter %d next_points %s" % (suggest_time[ii], ii, str(next_points)))
         assert len(next_points) == n_suggestions, "invalid number of suggestions provided by the optimizer"
 
+        # We could put this inside the TestProblem class, but ok here for now.
+        space_for_validate.validate(next_points)  # Fails if suggestions outside allowed range
+
         for jj, next_point in enumerate(next_points):
             tt = time()
             try:
@@ -89,18 +142,24 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions):
             except Exception as e:
                 logger.warning("Failure in function eval. Setting to inf.")
                 logger.exception(e, exc_info=True)
-                f_current_eval = np.inf  # or maybe nan better
+                f_current_eval = np.full((n_obj,), np.inf, dtype=float)
             eval_time[ii, jj] = time() - tt
+            assert np.shape(f_current_eval) == (n_obj,)
 
-            function_evals[ii, jj] = f_current_eval
+            suggest_log[ii] = next_points
+            function_evals[ii, jj, :] = f_current_eval
             logger.info(
                 "function_evaluation time %f value %f suggestion %s"
-                % (eval_time[ii, jj], f_current_eval, str(next_point))
+                % (eval_time[ii, jj], f_current_eval[0], str(next_point))
             )
 
-        # Note: this could be inf in the event of a crash in f evaluation, the
-        # optimizer must be able to handle that.
-        eval_list = function_evals[ii, :].tolist()
+        # Note: this could be inf in the event of a crash in f evaluation, the optimizer must be able to handle that.
+        # Only objective 0 is seen by optimizer.
+        eval_list = function_evals[ii, :, 0].tolist()
+
+        if callback is not None:
+            idx_ii, idx_jj = argmin_2d(function_evals[: ii + 1, :, 0])
+            callback(function_evals[idx_ii, idx_jj, :])
 
         tt = time()
         try:
@@ -111,13 +170,16 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions):
         observe_time[ii] = time() - tt
 
         logger.info(
-            "observation time %f, current best %f at iter %d" % (observe_time[ii], np.min(function_evals[: ii + 1]), ii)
+            "observation time %f, current best %f at iter %d"
+            % (observe_time[ii], np.min(function_evals[: ii + 1, :, 0]), ii)
         )
 
-    return function_evals, (suggest_time, eval_time, observe_time)
+    return function_evals, (suggest_time, eval_time, observe_time), suggest_log
 
 
-def run_sklearn_study(opt_class, opt_kwargs, model_name, dataset, scorer, n_calls, n_suggestions, data_root=None):
+def run_sklearn_study(
+    opt_class, opt_kwargs, model_name, dataset, scorer, n_calls, n_suggestions, data_root=None, callback=None
+):
     """Run a study for a single optimizer on a single `sklearn` model/data set combination.
 
     This routine is meant for benchmarking when tuning `sklearn` models, as opposed to the more general
@@ -143,26 +205,36 @@ def run_sklearn_study(opt_class, opt_kwargs, model_name, dataset, scorer, n_call
         How many parallel evaluation we run each iteration. Must be ``>= 1``.
     data_root : str
         Absolute path to folder containing custom data sets. This may be ``None`` if no custom data sets are used.``
+    callback : callable
+        Optional callback taking the current best function evaluation. Takes array of shape `(n_obj,)`.
 
     Returns
     -------
-    function_evals : :class:`numpy:numpy.ndarray` of shape (n_calls, n_suggestions)
+    function_evals : :class:`numpy:numpy.ndarray` of shape (n_calls, n_suggestions, n_obj)
         Value of objective for each evaluation.
     timing_evals : (:class:`numpy:numpy.ndarray`, :class:`numpy:numpy.ndarray`, :class:`numpy:numpy.ndarray`)
         Tuple of 3 timing results: ``(suggest_time, eval_time, observe_time)`` with shapes ``(n_calls,)``,
         ``(n_calls, n_suggestions)``, and ``(n_calls,)``. These are the time to make each suggestion, the time for each
         evaluation of the objective function, and the time to make an observe call.
+    suggest_log : list(list(dict(str, object)))
+        Log of the suggestions corresponding to the `function_evals`.
     """
     # Setup test function
-    function_instance = SklearnModel(model_name, dataset, scorer, data_root=data_root)
+    function_instance = _build_test_problem(model_name, dataset, scorer, data_root)
 
     # Setup optimizer
     api_config = function_instance.get_api_config()
     optimizer_instance = opt_class(api_config, **opt_kwargs)
 
+    assert function_instance.objective_names == OBJECTIVE_NAMES
+    assert OBJECTIVE_NAMES[0] == cc.VISIBLE_TO_OPT
+    n_obj = len(OBJECTIVE_NAMES)
+
     # Now actually do the experiment
-    results = run_study(optimizer_instance, function_instance, n_calls, n_suggestions)
-    return results
+    function_evals, timing, suggest_log = run_study(
+        optimizer_instance, function_instance, n_calls, n_suggestions, n_obj=n_obj, callback=callback
+    )
+    return function_evals, timing, suggest_log
 
 
 def get_objective_signature(model_name, dataset, scorer, data_root=None):
@@ -188,33 +260,38 @@ def get_objective_signature(model_name, dataset, scorer, data_root=None):
     signature : list(str)
         The signature of this test function.
     """
-    function_instance = SklearnModel(model_name, dataset, scorer, data_root=data_root)
+    function_instance = _build_test_problem(model_name, dataset, scorer, data_root)
     api_config = function_instance.get_api_config()
     signature = get_func_signature(function_instance.evaluate, api_config)
     return signature
 
 
-def build_eval_ds(function_evals):
+def build_eval_ds(function_evals, objective_names):
     """Convert :class:`numpy:numpy.ndarray` with function evaluations to :class:`xarray:xarray.Dataset`.
 
     This function is a data cleanup routine after running an experiment, before serializing the data to end the study.
 
     Parameters
     ----------
-    function_evals : :class:`numpy:numpy.ndarray` of shape (n_calls, n_suggestions)
+    function_evals : :class:`numpy:numpy.ndarray` of shape (n_calls, n_suggestions, n_obj)
         Value of objective for each evaluation.
+    objective_names : list(str) of shape (n_obj,)
+        The names of each objective.
 
     Returns
     -------
     eval_ds : :class:`xarray:xarray.Dataset`
-        :class:`xarray:xarray.Dataset` containing only one variable with the objective function evaluations. It has
-        dimensions ``(ITER, SUGGEST)``.
+        :class:`xarray:xarray.Dataset` containing one variable for each objective with the objective function
+        evaluations. It has dimensions ``(ITER, SUGGEST)``.
     """
-    n_call, n_suggest = np.shape(function_evals)
-    coords = {ITER: range(n_call), SUGGEST: range(n_suggest)}
-    dims = (ITER, SUGGEST)
+    n_call, n_suggest, n_obj = np.shape(function_evals)
+    assert len(objective_names) == n_obj
+    assert len(set(objective_names)) == n_obj, "Objective names must be unique"
+
+    coords = {ITER: range(n_call), SUGGEST: range(n_suggest), OBJECTIVE: list(objective_names)}
+    dims = (ITER, SUGGEST, OBJECTIVE)
     da = xr.DataArray(data=function_evals, coords=coords, dims=dims)
-    eval_ds = da.to_dataset(name="results")
+    eval_ds = da.to_dataset(dim=OBJECTIVE)
     return eval_ds
 
 
@@ -252,6 +329,40 @@ def build_timing_ds(suggest_time, eval_time, observe_time):
 
     time_ds = xr.Dataset(data, coords=coords)
     return time_ds
+
+
+def build_suggest_ds(suggest_log):
+    """Convert :class:`numpy:numpy.ndarray` with function evaluation inputs to :class:`xarray:xarray.Dataset`.
+
+    This function is a data cleanup routine after running an experiment, before serializing the data to end the study.
+
+    Parameters
+    ----------
+    suggest_log : list(list(dict(str, object)))
+        Log of the suggestions. It has shape `(n_call, n_suggest)`.
+
+    Returns
+    -------
+    suggest_ds : :class:`xarray:xarray.Dataset`
+        :class:`xarray:xarray.Dataset` containing one variable for each input with the objective function evaluations.
+        It has dimensions ``(ITER, SUGGEST)``.
+    """
+    n_call, n_suggest = np.shape(suggest_log)
+    assert n_call * n_suggest > 0
+
+    # Setup the dims
+    ds_vars = sorted(suggest_log[0][0].keys())
+    coords = OrderedDict([(ITER, range(n_call)), (SUGGEST, range(n_suggest))])
+
+    # There is prob a way to vectorize this more but good enough for now. Using np.full to infer dtype from 1st element
+    data = OrderedDict([(kk, ((ITER, SUGGEST), np.full((n_call, n_suggest), suggest_log[0][0][kk]))) for kk in ds_vars])
+    for ii in range(n_call):
+        for jj in range(n_suggest):
+            for kk in ds_vars:
+                data[kk][1][ii, jj] = suggest_log[ii][jj][kk]
+
+    suggest_ds = xr.Dataset(data, coords=coords)
+    return suggest_ds
 
 
 def load_optimizer_kwargs(optimizer_name, opt_root):  # pragma: io
@@ -303,7 +414,7 @@ def _setup_seeds(hex_str):  # pragma: main
 
 def experiment_main(opt_class, args=None):  # pragma: main
     """This is in effect the `main` routine for this experiment. However, it is called from the optimizer wrapper file
-    so the class can be passed in. The optimizers are assumed to be outside the package, so the optimizer classs can't
+    so the class can be passed in. The optimizers are assumed to be outside the package, so the optimizer class can't
     be named from inside the main function without using hacky stuff like `eval`.
     """
     if args is None:
@@ -345,6 +456,51 @@ def experiment_main(opt_class, args=None):  # pragma: main
 
     opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
 
+    # Setup the call back for intermediate logging
+    if cc.BASELINE not in XRSerializer.get_derived_keys(args[CmdArgs.db_root], db=args[CmdArgs.db]):
+        warnings.warn("Baselines not found. Will not log intermediate scores.")
+        callback = None
+    else:
+        test_case_str = SklearnModel.test_case_str(args[CmdArgs.classifier], args[CmdArgs.data], args[CmdArgs.metric])
+        optimizer_str = str_join_safe(ARG_DELIM, (args[CmdArgs.optimizer], args[CmdArgs.opt_rev], args[CmdArgs.rev]))
+
+        baseline_ds, baselines_meta = XRSerializer.load_derived(
+            args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.BASELINE
+        )
+
+        # Check the objective function signatures match in the baseline file
+        sig_errs, _ = analyze_signature_pair({test_case_str: signature[1]}, baselines_meta["signature"])
+        logger.info("Signature errors:\n%s" % sig_errs.to_string())
+        print(json.dumps({"exp sig errors": sig_errs.T.to_dict()}))
+
+        def log_mean_score_json(evals):
+            assert evals.shape == (len(OBJECTIVE_NAMES),)
+            assert not np.any(np.isnan(evals))
+
+            log_msg = {cc.TEST_CASE: test_case_str, cc.METHOD: optimizer_str, cc.TRIAL: args[CmdArgs.uuid]}
+
+            for idx, obj in enumerate(OBJECTIVE_NAMES):
+                assert OBJECTIVE_NAMES[idx] == obj
+
+                # Extract relevant rescaling info
+                slice_ = {cc.TEST_CASE: test_case_str, OBJECTIVE: obj}
+                best_opt = baseline_ds[cc.PERF_BEST].sel(slice_, drop=True).values.item()
+                base_clip_val = baseline_ds[cc.PERF_CLIP].sel(slice_, drop=True).values.item()
+
+                # Perform the same rescaling as found in experiment_analysis.compute_aggregates()
+                score = linear_rescale(evals[idx], best_opt, base_clip_val, 0.0, 1.0, enforce_bounds=False)
+                # Also, clip the score from below at -1 to limit max influence of single run on final average
+                score = np.clip(score, -1.0, 1.0)
+                score = score.item()  # Make easiest for logging in JSON
+                assert isinstance(score, float)
+
+                # Note: This is not the raw score but the rescaled one!
+                log_msg[obj] = score
+            log_msg = json.dumps(log_msg)
+            print(log_msg)
+
+        callback = log_mean_score_json
+
     # Now set the seeds for the actual experiment
     _setup_seeds(args[CmdArgs.uuid])
 
@@ -361,7 +517,7 @@ def experiment_main(opt_class, args=None):  # pragma: main
         )
     )
     logger.info("with data root: %s" % args[CmdArgs.data_root])
-    function_evals, timing = run_sklearn_study(
+    function_evals, timing, suggest_log = run_sklearn_study(
         opt_class,
         opt_kwargs,
         args[CmdArgs.classifier],
@@ -370,11 +526,13 @@ def experiment_main(opt_class, args=None):  # pragma: main
         args[CmdArgs.n_calls],
         args[CmdArgs.n_suggest],
         data_root=args[CmdArgs.data_root],
+        callback=callback,
     )
 
     # Curate results into clean dataframes
-    eval_ds = build_eval_ds(function_evals)
+    eval_ds = build_eval_ds(function_evals, OBJECTIVE_NAMES)
     time_ds = build_timing_ds(*timing)
+    suggest_ds = build_suggest_ds(suggest_log)
 
     # setup meta:
     meta = {"args": cmd.serializable_dict(args), "signature": signature}
@@ -386,6 +544,9 @@ def experiment_main(opt_class, args=None):  # pragma: main
 
     logger.info("saving timing")
     XRSerializer.save(time_ds, meta, args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.TIME, uuid_=run_uuid)
+
+    logger.info("saving suggest log")
+    XRSerializer.save(suggest_ds, meta, args[CmdArgs.db_root], db=args[CmdArgs.db], key=cc.SUGGEST_LOG, uuid_=run_uuid)
 
     logger.info("done")
 
@@ -431,6 +592,7 @@ def _get_opt_class(opt_name):
 
 
 def main():  # pragma: main
+    """This is where experiments happen. Usually called by the experiment launcher."""
     description = "Run a study with one benchmark function and an optimizer"
     args = cmd.parse_args(cmd.experiment_parser(description))
 

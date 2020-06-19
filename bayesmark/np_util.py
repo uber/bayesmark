@@ -225,3 +225,9 @@ def linear_rescale(X, lb0, ub0, lb1, ub1, enforce_bounds=True):
     else:
         X = m * (X - lb0) + lb1
     return X
+
+
+def argmin_2d(X):
+    """Take the arg minimum of a 2D array."""
+    ii, jj = np.unravel_index(X.argmin(), X.shape)
+    return ii, jj

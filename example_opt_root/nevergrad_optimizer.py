@@ -12,7 +12,7 @@ from bayesmark.space import Real
 class NevergradOptimizer(AbstractOptimizer):
     primary_import = "nevergrad"
 
-    def __init__(self, api_config, tool, budget):
+    def __init__(self, api_config, tool="OnePlusOne", budget=300):
         """Build wrapper class to use nevergrad optimizer in benchmark.
 
         Parameters

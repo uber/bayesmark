@@ -1,4 +1,8 @@
 {
+    "Flaky": [
+        "flaky_optimizer.py",
+        {}
+    ],
     "HyperOpt-New": [
         "hyperopt_optimizer.py",
         {}
@@ -36,9 +40,7 @@
     ],
     "PySOT-New": [
         "pysot_optimizer.py",
-        {
-            "expected_total_evals": 300
-        }
+        {}
     ],
     "RandomSearch-New": [
         "random_optimizer.py",

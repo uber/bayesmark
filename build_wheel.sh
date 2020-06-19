@@ -3,6 +3,9 @@
 set -ex
 set -o pipefail
 
+# Display what version is being used for logging
+python --version
+
 # Fail if untracked files so we don't delete them in next step
 test -z "$(git status --porcelain)"
 
@@ -14,4 +17,4 @@ SHA_LONG=$(git rev-parse HEAD)
 echo VERSION=\"$SHA_LONG\" >bayesmark/version.py
 
 # Now the actual build
-python3.6 setup.py sdist
+python3 setup.py sdist
