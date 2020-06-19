@@ -24,7 +24,7 @@ grep 'version="'$VERSION'",$' setup.py
 # Where envs go
 ENVS=~/envs
 # Which python version this uses
-PY=python3.6
+PY=python3.7
 # Which env contains twine and py version we use
 TWINE_ENV=twine_env
 # Where to run tar ball tests from

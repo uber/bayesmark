@@ -14,8 +14,8 @@ pip freeze | sort
 git clean -x -f -d
 rm -rf src/
 
-# See if opentuner will work in env
-dpkg -l | grep libsqlite
+# See if opentuner will work in env (but this command does not work on Mac)
+# dpkg -l | grep libsqlite
 
 # Simulate deployment with wheel
 ./build_wheel.sh
