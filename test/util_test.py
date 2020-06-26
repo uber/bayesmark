@@ -29,6 +29,29 @@ def some_mock_f(x):
     return y
 
 
+@given(_hashable(), lists(_hashable()))
+def test_in_or_none(x, L):
+    val = bobm_util.in_or_none(x, L)
+    assert isinstance(val, bool)
+    assert val == (x in L)
+    assert val == (x in set(L))
+
+
+@given(_hashable())
+def test_in_or_none_on_none(x):
+    val = bobm_util.in_or_none(x, None)
+    assert isinstance(val, bool)
+    assert val
+
+
+@given(lists(_hashable()))
+def test_in_or_none_self(L):
+    for xx in L:
+        val = bobm_util.in_or_none(xx, L)
+        assert isinstance(val, bool)
+        assert val
+
+
 @given(lists(_hashable()))
 def test_all_unique(L):
     bobm_util.all_unique(L)

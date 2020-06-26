@@ -35,7 +35,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor, RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Lasso, LogisticRegression, Ridge
-from sklearn.metrics.scorer import get_scorer
+from sklearn.metrics import get_scorer
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -44,6 +44,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from bayesmark.constants import ARG_DELIM, METRICS, MODEL_NAMES, VISIBLE_TO_OPT
 from bayesmark.data import METRICS_LOOKUP, ProblemType, get_problem_type, load_data
+from bayesmark.path_util import absopen
 from bayesmark.space import JointSpace
 from bayesmark.util import str_join_safe
 
@@ -401,9 +402,16 @@ class SklearnSurrogate(TestFunction):
 
         # Load the pre-trained model
         fname = SklearnModel.test_case_str(model, dataset, scorer) + ".pkl"
-        path = os.path.join(path, fname)
-        with open(path, "rb") as f:
-            self.model = pkl.load(f)
+
+        if isinstance(path, bytes):
+            # This is for test-ability, we could use mock instead.
+            self.model = pkl.loads(path)
+        else:
+            path = os.path.join(path, fname)  # pragma: io
+            assert os.path.isfile(path), "Model file not found: %s" % path
+
+            with absopen(path, "rb") as f:  # pragma: io
+                self.model = pkl.load(f)  # pragma: io
         assert callable(getattr(self.model, "predict", None))
 
     def evaluate(self, params):

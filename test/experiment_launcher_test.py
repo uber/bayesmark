@@ -111,6 +111,12 @@ def launcher_args_and_config(min_jobs=0):
     return S
 
 
+def test_is_arg_safe_empty():
+    val = launcher._is_arg_safe("")
+    assert isinstance(val, bool)
+    assert not val
+
+
 @given(launcher_args_and_config(), uuids())
 @settings(deadline=None, suppress_health_check=(HealthCheck.too_slow,))
 def test_gen_commands(args, run_uuid):

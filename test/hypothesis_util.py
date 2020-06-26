@@ -34,9 +34,9 @@ def mfloats():
     return floats(min_value=-1e3, max_value=1e3)
 
 
-def gufunc_floats(signature, min_side=0, max_side=5, **kwargs):
+def gufunc_floats(signature, min_side=0, max_side=5, unique=False, **kwargs):
     elements = floats(**kwargs)
-    S = gufunc_args(signature, dtype=np.float_, elements=elements, unique=False, min_side=min_side, max_side=max_side)
+    S = gufunc_args(signature, dtype=np.float_, elements=elements, unique=unique, min_side=min_side, max_side=max_side)
     return S
 
 

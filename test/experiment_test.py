@@ -17,6 +17,7 @@ import os.path
 import numpy as np
 from hypothesis import assume, given, settings
 from hypothesis.strategies import floats, integers, sampled_from, text
+from hypothesis_gufunc.extra.xr import simple_datasets
 from hypothesis_gufunc.gufunc import gufunc_args
 
 import bayesmark.experiment as exp
@@ -24,7 +25,7 @@ import bayesmark.random_search as rs
 from bayesmark import data, np_util
 from bayesmark.abstract_optimizer import AbstractOptimizer
 from bayesmark.builtin_opt.config import CONFIG
-from bayesmark.constants import DATA_LOADER_NAMES, METRICS, MODEL_NAMES
+from bayesmark.constants import DATA_LOADER_NAMES, ITER, METRICS, MODEL_NAMES, SUGGEST
 from bayesmark.sklearn_funcs import SklearnModel, TestFunction
 from hypothesis_util import seeds
 from util import space_configs
@@ -49,6 +50,33 @@ class RandomOptimizer(AbstractOptimizer):
         # Random search so don't do anything for observe
         if self.flaky:
             assert self.random.rand() <= 0.5
+
+
+class OutOfBoundsOptimizer(AbstractOptimizer):
+    def __init__(self, api_config, random=np_util.random):
+        AbstractOptimizer.__init__(self, api_config)
+        self.random = random
+        self.param_list = sorted([kk for kk in api_config.keys() if api_config[kk]["type"] in ("real", "int")])
+
+    def suggest(self, n_suggestions=1):
+        x_guess = rs.suggest_dict([], [], self.api_config, n_suggestions=n_suggestions, random=self.random)
+
+        ii = self.random.randint(0, n_suggestions)
+        pp = self.random.choice(self.param_list)
+
+        if self.api_config[pp]["type"] == "real":
+            eps = self.random.rand()
+        else:
+            eps = self.random.randint(1, 10)
+
+        if self.random.rand() <= 0.5:
+            x_guess[ii][pp] = self.api_config[pp]["range"][0] - eps
+        else:
+            x_guess[ii][pp] = self.api_config[pp]["range"][1] + eps
+        return x_guess
+
+    def observe(self, X, y):
+        pass
 
 
 class FlakyProblem(TestFunction):
@@ -79,6 +107,76 @@ def test_run_study(model_name, dataset, scorer, n_calls, n_suggestions, seed):
     optimizer = RandomOptimizer(function_instance.get_api_config(), random=np.random.RandomState(seed))
     optimizer.get_version()
     exp.run_study(optimizer, function_instance, n_calls, n_suggestions, n_obj=len(function_instance.objective_names))
+
+
+@given(
+    sampled_from(MODEL_NAMES),
+    sampled_from(DATA_LOADER_NAMES),
+    sampled_from(METRICS),
+    integers(1, 5),
+    integers(1, 3),
+    seeds(),
+)
+def test_run_study_bounds_fail(model_name, dataset, scorer, n_calls, n_suggestions, seed):
+    prob_type = data.get_problem_type(dataset)
+    assume(scorer in data.METRICS_LOOKUP[prob_type])
+
+    function_instance = SklearnModel(model_name, dataset, scorer)
+    optimizer = OutOfBoundsOptimizer(function_instance.get_api_config(), random=np.random.RandomState(seed))
+    optimizer.get_version()
+
+    # pytest have some assert failed tools we could use instead, but this is ok for now
+    bounds_fails = False
+    try:
+        exp.run_study(
+            optimizer, function_instance, n_calls, n_suggestions, n_obj=len(function_instance.objective_names)
+        )
+    except Exception as e:
+        bounds_fails = str(e) == "Optimizer suggestion is out of range."
+    assert bounds_fails
+
+
+@given(
+    sampled_from(MODEL_NAMES),
+    sampled_from(DATA_LOADER_NAMES),
+    sampled_from(METRICS),
+    integers(0, 5),
+    integers(1, 3),
+    seeds(),
+)
+@settings(max_examples=10, deadline=None)
+def test_run_study_callback(model_name, dataset, scorer, n_calls, n_suggestions, seed):
+    prob_type = data.get_problem_type(dataset)
+    assume(scorer in data.METRICS_LOOKUP[prob_type])
+
+    function_instance = SklearnModel(model_name, dataset, scorer)
+    optimizer = RandomOptimizer(function_instance.get_api_config(), random=np.random.RandomState(seed))
+    optimizer.get_version()
+    n_obj = len(function_instance.objective_names)
+
+    function_evals_cmin = np.zeros((n_calls, n_obj), dtype=float)
+    iters_list = []
+
+    def callback(f_min, iters):
+        assert f_min.shape == (n_obj,)
+
+        iters_list.append(iters)
+        if iters == 0:
+            assert np.all(f_min == np.inf)
+            return
+
+        function_evals_cmin[iters - 1, :] = f_min
+
+    function_evals, _, _ = exp.run_study(
+        optimizer, function_instance, n_calls, n_suggestions, n_obj=n_obj, callback=callback
+    )
+
+    assert iters_list == list(range(n_calls + 1))
+
+    for ii in range(n_obj):
+        for jj in range(n_calls):
+            idx0, idx1 = np_util.argmin_2d(function_evals[: jj + 1, :, 0])
+            assert function_evals_cmin[jj, ii] == function_evals[idx0, idx1, ii]
 
 
 @given(space_configs(allow_missing=True), integers(0, 5), integers(1, 3), seeds(), seeds())
@@ -151,6 +249,30 @@ def test_build_eval_ds(args):
 def test_build_timing_ds(args):
     suggest_time, eval_time, observe_time = args
     exp.build_timing_ds(suggest_time, eval_time, observe_time)
+
+
+@given(
+    simple_datasets(
+        {"int": (ITER, SUGGEST), "real": (ITER, SUGGEST), "binary": (ITER, SUGGEST), "cat": (ITER, SUGGEST)},
+        dtype={"int": int, "real": float, "binary": bool, "cat": str},
+        min_side=1,
+    )
+)
+def test_build_suggest_ds(suggest_ds):
+    ds_vars = list(suggest_ds)
+
+    n_call, n_suggest = suggest_ds[ds_vars[0]].values.shape
+    suggest_log = np.zeros((n_call, n_suggest), dtype=object)
+    for ii in range(n_call):
+        for jj in range(n_suggest):
+            suggest_log[ii, jj] = {}
+            for kk in ds_vars:
+                suggest_log[ii, jj][kk] = suggest_ds[kk].sel({ITER: ii, SUGGEST: jj}, drop=True).values.item()
+    suggest_log = suggest_log.tolist()
+
+    suggest_ds_2 = exp.build_suggest_ds(suggest_log)
+
+    assert suggest_ds.equals(suggest_ds_2)
 
 
 def test_get_opt_class_module():

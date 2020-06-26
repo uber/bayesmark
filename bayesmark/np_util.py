@@ -229,5 +229,34 @@ def linear_rescale(X, lb0, ub0, lb1, ub1, enforce_bounds=True):
 
 def argmin_2d(X):
     """Take the arg minimum of a 2D array."""
+    assert X.size > 0, "argmin of empty array not defined"
+
     ii, jj = np.unravel_index(X.argmin(), X.shape)
     return ii, jj
+
+
+def cummin(x_val, x_key):
+    """Get the cumulative minimum of `x_val` when ranked according to `x_key`.
+
+    Parameters
+    ----------
+    x_val : :class:`numpy:numpy.ndarray` of shape (n, d)
+        The array to get the cumulative minimum of along axis 0.
+    x_key : :class:`numpy:numpy.ndarray` of shape (n, d)
+        The array for ranking elements as to what is the minimum.
+
+    Returns
+    -------
+    c_min : :class:`numpy:numpy.ndarray` of shape (n, d)
+        The cumulative minimum array.
+    """
+    assert x_val.shape == x_key.shape
+    assert x_val.ndim == 2
+    assert not np.any(np.isnan(x_key)), "cummin not defined for nan key"
+
+    n, _ = x_val.shape
+
+    xm = np.minimum.accumulate(x_key, axis=0)
+    idx = np.maximum.accumulate((x_key <= xm) * np.arange(n)[:, None])
+    c_min = np.take_along_axis(x_val, idx, axis=0)
+    return c_min

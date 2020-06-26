@@ -57,6 +57,7 @@ class CmdArgs(IntEnum):
     dry_run = auto()
     rev = auto()
     opt_rev = auto()
+    timeout = auto()
 
 
 CMD_STR = {
@@ -76,6 +77,7 @@ CMD_STR = {
     CmdArgs.jobs_file: ("-ofile", "--jobs-file"),
     CmdArgs.ravel: ("-rv", "--ravel"),
     CmdArgs.verbose: ("-v", "--verbose"),
+    CmdArgs.timeout: ("-t", "--timeout"),
     CmdArgs.dry_run: (None, "dry_run"),  # Will not be specified from CLI
     CmdArgs.rev: (None, "rev"),  # Will not be specified from CLI
     CmdArgs.opt_rev: (None, "opt_rev"),  # Will not be specified from CLI. Which version of optimizer.
@@ -224,6 +226,7 @@ def launcher_parser(description):
         parser, CmdArgs.n_suggest, default=1, type=positive_int, help="number of suggestions to provide in parallel"
     )
     add_argument(parser, CmdArgs.n_repeat, default=20, type=positive_int, help="number of repetitions of each study")
+    add_argument(parser, CmdArgs.timeout, default=0, type=int, help="Timeout per experiment (0 = no timeout)")
 
     # Arguments for creating dry run jobs file
     add_argument(
@@ -311,7 +314,10 @@ def _cleanup(filename_str):
 
 def infer_settings(opt_root, opt_pattern="**/optimizer.py"):
     opt_root = PosixPath(opt_root)
+    assert opt_root.is_dir(), "Opt root directory doesn't exist: %s" % opt_root
+    assert opt_root.is_absolute(), "Only absolute path should have even gotten this far."
 
+    # Always sort for reproducibility
     source_files = sorted(opt_root.glob(opt_pattern))
     source_files = [ss.relative_to(opt_root) for ss in source_files]
 

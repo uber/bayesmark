@@ -19,7 +19,7 @@ CONFIG = {
     "OpenTuner-BanditA": ["opentuner_optimizer.py", {"techniques": ["AUCBanditMetaTechniqueA"]}],
     "OpenTuner-GA": ["opentuner_optimizer.py", {"techniques": ["PSO_GA_Bandit"]}],
     "OpenTuner-GA-DE": ["opentuner_optimizer.py", {"techniques": ["PSO_GA_DE"]}],
-    "PySOT": ["pysot_optimizer.py", {"expected_total_evals": 300}],
+    "PySOT": ["pysot_optimizer.py", {}],
     "RandomSearch": ["random_optimizer.py", {}],
     "Scikit-GBRT-Hedge": [
         "scikit_optimizer.py",

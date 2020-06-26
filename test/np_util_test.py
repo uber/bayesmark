@@ -255,3 +255,58 @@ def test_isclose_2():
 
     assert np.ndim(y) == 0
     assert np.isscalar(y)
+
+
+@given(gufunc_floats("(n,m)->(2)", allow_nan=False, min_side=1))
+def test_argmin_2d_no_nan(args):
+    X, = args
+
+    idx0, idx1 = np_util.argmin_2d(X)
+    assert X[idx0, idx1] <= np.min(X)
+
+
+@given(gufunc_floats("(n,m)->(2)", allow_nan=True, min_side=1))
+def test_argmin_2d_nan(args):
+    X, = args
+
+    idx0, idx1 = np_util.argmin_2d(X)
+    assert np.isnan(X[idx0, idx1]) == np.any(np.isnan(X))
+
+
+@given(gufunc_floats("(n,m),(n,m)->(n,m)", allow_nan=False))
+def test_cummin(args):
+    x_val, x_key = args
+
+    n, m = x_val.shape
+
+    c_min = np_util.cummin(x_val, x_key)
+    assert c_min.shape == (n, m)
+
+    for ii in range(n):
+        for jj in range(m):
+            last_min = np.where(x_key[: ii + 1, jj] == x_key[: ii + 1, jj].min())[0][-1]
+            assert x_key[last_min, jj] <= np.min(x_key[: ii + 1, jj])
+
+            assert c_min[ii, jj] == x_val[last_min, jj]
+
+
+@given(gufunc_floats("(n,m),(n,m)->(n,m)", allow_nan=True))
+def test_cummin_nan(args):
+    x_val, x_key = args
+
+    n, m = x_val.shape
+
+    x_key = np.nan_to_num(x_key)
+
+    c_min = np_util.cummin(x_val, x_key)
+    assert c_min.shape == (n, m)
+
+    for ii in range(n):
+        for jj in range(m):
+            last_min = np.where(x_key[: ii + 1, jj] == x_key[: ii + 1, jj].min())[0][-1]
+            assert x_key[last_min, jj] <= np.min(x_key[: ii + 1, jj])
+
+            if np.isnan(c_min[ii, jj]):
+                assert np.isnan(x_val[last_min, jj])
+            else:
+                assert c_min[ii, jj] == x_val[last_min, jj]

@@ -19,7 +19,7 @@ import random as pyrandom
 import uuid as pyuuid
 import warnings
 from itertools import product
-from subprocess import call
+from subprocess import TimeoutExpired, call
 
 import numpy as np
 
@@ -201,7 +201,7 @@ def dry_run(args, opt_file_lookup, run_uuid, fp, random=np_random):
         fp.write("job_%s_%s %s\n" % (job_suffix, ii_str, " && ".join(subcommands[ii])))
 
 
-def real_run(args, opt_file_lookup, run_uuid):  # pragma: io
+def real_run(args, opt_file_lookup, run_uuid, timeout=None):  # pragma: io
     """Run sequence of independent experiments to fully run the benchmark.
 
     This uses `subprocess` to launch a separate process (in serial) for each experiment.
@@ -216,6 +216,8 @@ def real_run(args, opt_file_lookup, run_uuid):  # pragma: io
     run_uuid : uuid.UUID
         UUID for this launcher run. Needed to generate different experiments UUIDs on each call. This function is
         deterministic provided the same `run_uuid`.
+    timeout : int
+        Max seconds per experiment
     """
     args[CmdArgs.db] = XRSerializer.init_db(args[CmdArgs.db_root], db=args[CmdArgs.db], keys=EXP_VARS, exist_ok=True)
     logger.info("Supply --db %s to append to this experiment or reproduce jobs file." % args[CmdArgs.db])
@@ -224,9 +226,13 @@ def real_run(args, opt_file_lookup, run_uuid):  # pragma: io
     counter = 0
     G = gen_commands(args, opt_file_lookup, run_uuid)
     for _, full_cmd in G:
-        status = call(full_cmd, shell=False, cwd=args[CmdArgs.optimizer_root])
-        if status != 0:
-            raise ChildProcessError("status code %d returned from:\n%s" % (status, " ".join(full_cmd)))
+        try:
+            status = call(full_cmd, shell=False, cwd=args[CmdArgs.optimizer_root], timeout=timeout)
+            if status != 0:
+                raise ChildProcessError("status code %d returned from:\n%s" % (status, " ".join(full_cmd)))
+        except TimeoutExpired:
+            logger.info(f"Experiment timeout after {timeout} seconds.")
+
         counter += 1
     logger.info(f"Benchmark script ran {counter} studies successfully.")
 
@@ -271,7 +277,8 @@ def main():
         with absopen(args[CmdArgs.jobs_file], "w") as fp:
             dry_run(args, opt_file_lookup, run_uuid, fp)
     else:
-        real_run(args, opt_file_lookup, run_uuid)
+        timeout = args[CmdArgs.timeout] if args[CmdArgs.timeout] > 0 else None
+        real_run(args, opt_file_lookup, run_uuid, timeout)
 
     logger.info("done")
 

@@ -66,8 +66,9 @@ def _build_test_problem(model_name, dataset, scorer, path):
         The test function to evaluate in experiments.
     """
     if model_name.endswith("-surr"):
-        model_name = chomp(model_name, "-surr")
-        prob = SklearnSurrogate(model_name, dataset, scorer, path=path)
+        # Requires IO to test these, so will add the pargma here. Maybe that points towards a possible design change.
+        model_name = chomp(model_name, "-surr")  # pragma: io
+        prob = SklearnSurrogate(model_name, dataset, scorer, path=path)  # pragma: io
     else:
         prob = SklearnModel(model_name, dataset, scorer, data_root=path)
     return prob
@@ -91,7 +92,8 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
     n_obj : int
         Number of different objectives measured, only objective 0 is seen by optimizer. Must be ``>= 1``.
     callback : callable
-        Optional callback taking the current best function evaluation. Takes array of shape `(n_obj,)`.
+        Optional callback taking the current best function evaluation, and the number of iterations finished. Takes
+        array of shape `(n_obj,)`.
 
     Returns
     -------
@@ -111,7 +113,7 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
 
     if callback is not None:
         # First do initial log at inf score, in case we don't even get to first eval before crash/job timeout
-        callback(np.full((n_obj,), np.inf, dtype=float))
+        callback(np.full((n_obj,), np.inf, dtype=float), 0)
 
     suggest_time = np.zeros(n_calls)
     observe_time = np.zeros(n_calls)
@@ -125,6 +127,7 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
         except Exception as e:
             logger.warning("Failure in optimizer suggest. Falling back to random search.")
             logger.exception(e, exc_info=True)
+            print(json.dumps({"optimizer_suggest_exception": {ITER: ii}}))
             api_config = test_problem.get_api_config()
             next_points = rs.suggest_dict([], [], api_config, n_suggestions=n_suggestions)
         suggest_time[ii] = time() - tt
@@ -133,7 +136,10 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
         assert len(next_points) == n_suggestions, "invalid number of suggestions provided by the optimizer"
 
         # We could put this inside the TestProblem class, but ok here for now.
-        space_for_validate.validate(next_points)  # Fails if suggestions outside allowed range
+        try:
+            space_for_validate.validate(next_points)  # Fails if suggestions outside allowed range
+        except Exception:
+            raise ValueError("Optimizer suggestion is out of range.")
 
         for jj, next_point in enumerate(next_points):
             tt = time()
@@ -142,6 +148,7 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
             except Exception as e:
                 logger.warning("Failure in function eval. Setting to inf.")
                 logger.exception(e, exc_info=True)
+                print(json.dumps({"optimizer_observe_exception": {ITER: ii, SUGGEST: jj}}))
                 f_current_eval = np.full((n_obj,), np.inf, dtype=float)
             eval_time[ii, jj] = time() - tt
             assert np.shape(f_current_eval) == (n_obj,)
@@ -159,7 +166,7 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
 
         if callback is not None:
             idx_ii, idx_jj = argmin_2d(function_evals[: ii + 1, :, 0])
-            callback(function_evals[idx_ii, idx_jj, :])
+            callback(function_evals[idx_ii, idx_jj, :], ii + 1)
 
         tt = time()
         try:
@@ -206,7 +213,8 @@ def run_sklearn_study(
     data_root : str
         Absolute path to folder containing custom data sets. This may be ``None`` if no custom data sets are used.``
     callback : callable
-        Optional callback taking the current best function evaluation. Takes array of shape `(n_obj,)`.
+        Optional callback taking the current best function evaluation, and the number of iterations finished. Takes
+        array of shape `(n_obj,)`.
 
     Returns
     -------
@@ -473,11 +481,16 @@ def experiment_main(opt_class, args=None):  # pragma: main
         logger.info("Signature errors:\n%s" % sig_errs.to_string())
         print(json.dumps({"exp sig errors": sig_errs.T.to_dict()}))
 
-        def log_mean_score_json(evals):
+        def log_mean_score_json(evals, iters):
             assert evals.shape == (len(OBJECTIVE_NAMES),)
             assert not np.any(np.isnan(evals))
 
-            log_msg = {cc.TEST_CASE: test_case_str, cc.METHOD: optimizer_str, cc.TRIAL: args[CmdArgs.uuid]}
+            log_msg = {
+                cc.TEST_CASE: test_case_str,
+                cc.METHOD: optimizer_str,
+                cc.TRIAL: args[CmdArgs.uuid],
+                cc.ITER: iters,
+            }
 
             for idx, obj in enumerate(OBJECTIVE_NAMES):
                 assert OBJECTIVE_NAMES[idx] == obj

@@ -19,6 +19,7 @@ bayesmark-anal -dir $DB_ROOT -b $DBID -v
 # Try ipynb export
 python -m ipykernel install --name=bobm_ipynb --user
 jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
+jupyter nbconvert --to html --execute notebooks/plot_test_case.ipynb
 
 # Try dry run
 bayesmark-launch -n 15 -r 3 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT OpenTuner-BanditA -c SVM DT -nj 50 -v
@@ -31,6 +32,9 @@ bayesmark-anal -dir $DB_ROOT -b $DBID -v
 
 # Export again
 jupyter nbconvert --to html --execute notebooks/plot_mean_score.ipynb
+jupyter nbconvert --to html --execute notebooks/plot_test_case.ipynb
 
 # Try dry run
 bayesmark-launch -n 15 -r 2 -dir $DB_ROOT -b $DBID -o RandomSearch PySOT-New OpenTuner-BanditA-New -c SVM DT --opt-root ./example_opt_root -nj 50 -v
+
+echo "success"

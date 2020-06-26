@@ -3,6 +3,7 @@ exclude_lines =
     pragma: no cover
     @abstract
     ValueError
+    NotImplementedError
     assert
     _error
     def main()

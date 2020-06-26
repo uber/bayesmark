@@ -33,7 +33,7 @@ python --version
 pip freeze | sort
 
 # Remove this if we want to make sure everything is compatible with latest
-pip install -r ../requirements/optimizers.txt
+# pip install -r ../requirements/optimizers.txt
 
 pip install ../dist/bayesmark.tar.gz[optimizers,notebooks]
 ../integration_test.sh
@@ -41,3 +41,5 @@ pip install ../dist/bayesmark.tar.gz[optimizers,notebooks]
 # wrap up
 deactivate
 cd ..
+
+echo "success with setup wrapper too"
