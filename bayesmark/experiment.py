@@ -148,7 +148,6 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
             except Exception as e:
                 logger.warning("Failure in function eval. Setting to inf.")
                 logger.exception(e, exc_info=True)
-                print(json.dumps({"optimizer_observe_exception": {ITER: ii, SUGGEST: jj}}))
                 f_current_eval = np.full((n_obj,), np.inf, dtype=float)
             eval_time[ii, jj] = time() - tt
             assert np.shape(f_current_eval) == (n_obj,)
@@ -174,6 +173,7 @@ def run_study(optimizer, test_problem, n_calls, n_suggestions, n_obj=1, callback
         except Exception as e:
             logger.warning("Failure in optimizer observe. Ignoring these observations.")
             logger.exception(e, exc_info=True)
+            print(json.dumps({"optimizer_observe_exception": {ITER: ii}}))
         observe_time[ii] = time() - tt
 
         logger.info(
