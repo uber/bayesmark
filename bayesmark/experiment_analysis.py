@@ -272,6 +272,13 @@ def main():
     ), "Data set contains test cases not found in baseline."
     baseline_ds = baseline_ds.sel({TEST_CASE: test_cases_run})
 
+    # Also subset to allow shorter runs
+    iters_run = perf_ds.coords[ITER].values.tolist()
+    assert set(iters_run) <= set(
+        baseline_ds.coords[ITER].values.tolist()
+    ), "Data set not same batch size or too many iters compared to baseline."
+    baseline_ds = baseline_ds.sel({ITER: iters_run})
+
     # Do the actual computation
     perf_visible = perf_ds[cc.VISIBLE_TO_OPT]
     agg_result = OrderedDict()
