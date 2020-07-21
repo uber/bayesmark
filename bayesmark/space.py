@@ -600,6 +600,7 @@ class Categorical(Space):
 
         self.dtype = CAT_DTYPE
         # Debatable if decode should go in unwarp or round_to_values
+
         def _encode(x):
             return encode(x, self.values, True, WARPED_DTYPE, True)
 
