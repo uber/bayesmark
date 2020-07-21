@@ -600,9 +600,15 @@ class Categorical(Space):
 
         self.dtype = CAT_DTYPE
         # Debatable if decode should go in unwarp or round_to_values
-        self.warp_f = lambda x: encode(x, self.values, True, WARPED_DTYPE, True)
+        def _encode(x):
+            return encode(x, self.values, True, WARPED_DTYPE, True)
+
+        def _decode(x):
+            return decode(x, self.values, True)
+
+        self.warp_f = _encode
         self.unwarp_f = identity
-        self.round_to_values = lambda y: decode(y, self.values, True)
+        self.round_to_values = _decode
 
         self.lower, self.upper = None, None  # Don't need them
         self.lower_warped = np.zeros(len(values), dtype=WARPED_DTYPE)
