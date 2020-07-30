@@ -227,7 +227,6 @@ class HyperoptOptimizer(AbstractOptimizer):
             x_guess_ = HyperoptOptimizer.hashable_dict(x_guess)
             assert x_guess_ in self.trial_id_lookup, "Appears to be guess that did not originate from suggest"
 
-            assert x_guess_ in self.trial_id_lookup, "trial object not available in trial dict"
             trial_id = self.trial_id_lookup.pop(x_guess_)
             trial = self.get_trial(trial_id)
             assert self.cleanup_guess(trial["misc"]["vals"]) == x_guess, "trial ID not consistent with x values stored"
