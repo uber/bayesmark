@@ -610,7 +610,7 @@ class Categorical(Space):
 
     def round_to_values(self, y):
         return decode(y, self.values, True)
-        
+
     def warp(self, X):
         """Warp inputs to a continuous space.
 
