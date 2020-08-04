@@ -232,6 +232,7 @@ def real_run(args, opt_file_lookup, run_uuid, timeout=None):  # pragma: io
                 raise ChildProcessError("status code %d returned from:\n%s" % (status, " ".join(full_cmd)))
         except TimeoutExpired:
             logger.info(f"Experiment timeout after {timeout} seconds.")
+            print(json.dumps({"experiment_timeout_exception": " ".join(full_cmd)}))
 
         counter += 1
     logger.info(f"Benchmark script ran {counter} studies successfully.")
