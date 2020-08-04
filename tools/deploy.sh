@@ -155,8 +155,8 @@ cd $REPO_DIR
 git push $REMOTE master
 git diff master $REMOTE/master --quiet
 
-# Show sha256sum in case we want to check against PyPI test
-sha256sum dist/*
+# Show sha256sum in case we want to check against PyPI test, use || for Mac OS version
+sha256sum dist/* || shasum -a 256 dist/*
 
 # See if tests pass remote, TODO use travis CLI
 read -t 1 -n 10000 discard || true
