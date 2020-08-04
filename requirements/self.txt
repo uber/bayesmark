@@ -1,1 +1,1 @@
-bayesmark==0.0.6
+bayesmark==0.0.7
