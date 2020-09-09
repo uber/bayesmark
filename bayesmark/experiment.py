@@ -513,6 +513,7 @@ def experiment_main(opt_class, args=None):  # pragma: main
             print(log_msg, flush=True)
             # One second safety delay to protect against subprocess stdout getting lost
             import time
+
             time.sleep(1)
 
         callback = log_mean_score_json
