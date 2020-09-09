@@ -19,7 +19,7 @@ import random as pyrandom
 import uuid
 import warnings
 from collections import OrderedDict
-from time import time
+from time import sleep, time
 
 import numpy as np
 import xarray as xr
@@ -512,9 +512,7 @@ def experiment_main(opt_class, args=None):  # pragma: main
             log_msg = json.dumps(log_msg)
             print(log_msg, flush=True)
             # One second safety delay to protect against subprocess stdout getting lost
-            import time
-
-            time.sleep(1)
+            sleep(1)
 
         callback = log_mean_score_json
 
