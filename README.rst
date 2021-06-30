@@ -1,10 +1,6 @@
 Installation
 ============
 
-.. image:: https://api.travis-ci.com/uber/bayesmark.png?token=RSemjpisB7uiZv78DVwd&branch=master
-   :target: https://travis-ci.com/uber/bayesmark
-   :alt:
-
 This project provides a benchmark framework to easily compare Bayesian optimization methods on real machine learning tasks.
 
 This project is experimental and the APIs are not considered stable.
