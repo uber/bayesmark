@@ -22,7 +22,7 @@ import os.path
 import sys
 import uuid as pyuuid
 from enum import IntEnum, auto
-from pathlib import PosixPath
+from pathlib import Path
 
 import git
 from git.exc import InvalidGitRepositoryError
@@ -313,7 +313,7 @@ def _cleanup(filename_str):
 
 
 def infer_settings(opt_root, opt_pattern="**/optimizer.py"):
-    opt_root = PosixPath(opt_root)
+    opt_root = Path(opt_root)
     assert opt_root.is_dir(), "Opt root directory doesn't exist: %s" % opt_root
     assert opt_root.is_absolute(), "Only absolute path should have even gotten this far."
 
